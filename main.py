@@ -1,10 +1,9 @@
-from inversion_filter import inversion_filter as inversion
+import active_window_checker
 
 
 def main():
     print(f'Hi, there!')
-    for i in range(20):
-        inversion.toggle()
+    active_window_checker.main()
 
 
 if __name__ == '__main__':
