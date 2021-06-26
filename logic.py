@@ -1,7 +1,20 @@
 import pyautogui as gui
 from winregal import RegKey
 
-gui.FAILSAFE = False
+
+class App:
+    def __init__(self):
+        gui.FAILSAFE = False
+        self.state_controller = FilterStateController(self)
+
+    def run(self):
+        from active_window_checker import listen_switch_events
+        listen_switch_events(self.state_controller.on_active_window_switched)
+
+
+class AppElement:
+    def __init__(self, app: App):
+        self.app = app
 
 
 class InversionFilterController:
@@ -20,7 +33,7 @@ class InversionFilterController:
         gui.hotkey("ctrl", "win", "c")
 
 
-class FilterStateController:
+class FilterStateController(AppElement):
     def on_active_window_switched(self,
                                   hWinEventHook,
                                   event,

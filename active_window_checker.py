@@ -173,7 +173,7 @@ def setHook(WinEventProc, eventType):
     )
 
 
-def main(callback=default_callback):
+def listen_switch_events(callback=default_callback):
     ole32.CoInitialize(0)
 
     WinEventProc = WinEventProcType(callback)

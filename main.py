@@ -1,10 +1,8 @@
-import active_window_checker
-from logic import FilterStateController
-
-
 def main():
+    from logic import App
     print(f'Hi, there!')
-    active_window_checker.main(FilterStateController().on_active_window_switched)
+    app = App()
+    app.run()
 
 
 if __name__ == '__main__':
