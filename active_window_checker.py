@@ -39,7 +39,7 @@ WinEventProcType = ctypes.WINFUNCTYPE(
 eventTypes = {
     win32con.EVENT_SYSTEM_FOREGROUND: "Foreground",
     win32con.EVENT_OBJECT_FOCUS: "Focus",
-    win32con.EVENT_OBJECT_SHOW: "Show",
+    #win32con.EVENT_OBJECT_SHOW: "Show",
     win32con.EVENT_SYSTEM_DIALOGSTART: "Dialog",
     win32con.EVENT_SYSTEM_CAPTURESTART: "Capture",
     win32con.EVENT_SYSTEM_MINIMIZEEND: "UnMinimize"
@@ -105,6 +105,8 @@ def getProcessID(dwEventThread, hwnd):
 
     return processID
 
+def getActiveWindow():
+    return user32.GetForegroundWindow()
 
 def getProcessFilename(processID):
     hProcess = kernel32.OpenProcess(processFlag, 0, processID)

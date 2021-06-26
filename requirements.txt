@@ -8,3 +8,4 @@ PyScreeze==0.1.27
 PyTweening==1.0.3
 pywin32==301
 six==1.16.0
+winregal==1.0.1
