@@ -11,6 +11,7 @@ class App:
     def __init__(self):
         gui.FAILSAFE = False
         self.state_controller = FilterStateController(self)
+        self.interaction_manager = InteractionManager(self)
         self.config = ConfigManager("config").get_config()
 
     def run(self):
@@ -18,6 +19,7 @@ class App:
         create_task(listen_switch_events(
             self.state_controller.on_active_window_switched
         ))
+        self.interaction_manager.setup()
 
 
 class AppElement:
@@ -135,3 +137,25 @@ class ConfigManager:
             time.sleep(self.timeout)  # allow interim events to be queued
             self.event_queue.queue.clear()
             self._sleeping = False
+
+
+class InteractionManager(AppElement):
+    def setup(self):
+        from system_hotkey import SystemHotkey
+        hk = SystemHotkey()
+        initial_hotkey = ('control', 'alt')
+        special_key = 'shift'
+        special_hotkey = (*initial_hotkey, special_key)
+        hotkeys = {
+            'kp_add': self.append_current_app,
+            'kp_subtract': self.delete_current_app,
+        }
+        for k, v in hotkeys.items():
+            hk.register((*initial_hotkey, k), callback=v)
+            hk.register((*special_hotkey, k), callback=lambda: v(True))
+
+    def append_current_app(self, short_act=False):
+        print('+')
+
+    def delete_current_app(self, short_act=False):
+        print('-')
