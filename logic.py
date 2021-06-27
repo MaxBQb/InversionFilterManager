@@ -80,9 +80,11 @@ class ConfigManager:
         def f(event):
             config.reload()
             self.observer.sleep()
-            self.invalidate_config(config)
+            if self.invalidate_config(config):
+                print(f"Changes for '{config.filename}' applied")
+            else:
+                print(f"Changes for '{config.filename}' fixed & applied")
             self.observer.wakeup()
-            print(f"Changes from '{config.filename}' applied")
 
         handler.on_modified = f
         self.observer.schedule(handler, ".", recursive=True)
@@ -92,15 +94,17 @@ class ConfigManager:
     def invalidate_config(config: ConfigObj):
         from validate import Validator
         test = config.validate(Validator(), copy=True, preserve_errors=True)
+        check_failed = test is not True
         if test is False:
             config.restore_defaults()
             config.validate(Validator(), copy=True)
             print("Invalid configuration found.")
             print(f"Restore defaults for '{config.filename}'")
-        elif test is not True:
+        elif check_failed:
             ConfigManager.invalidate_parts(config, test)
         config.initial_comment = ["Feel free to edit this config file"]
         config.write()
+        return check_failed
 
     @staticmethod
     def invalidate_parts(config: ConfigObj, test: dict):
