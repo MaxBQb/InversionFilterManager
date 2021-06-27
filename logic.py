@@ -1,7 +1,10 @@
+import time
 import pyautogui as gui
+from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 from winregal import RegKey
 from configobj import ConfigObj
 from asyncio import create_task
+from watchdog.observers import Observer
 
 
 class App:
@@ -58,6 +61,7 @@ class FilterStateController(AppElement):
 class ConfigManager:
     def __init__(self, name: str):
         self.name = name
+        self.observer = ConfigManager.LazyObserver()
 
     def get_config(self):
         config = ConfigObj(infile=self.name + ".ini",
@@ -65,7 +69,24 @@ class ConfigManager:
                            create_empty=True,
                            write_empty_values=True)
         self.invalidate_config(config)
+        self.watch_config(config)
         return config
+
+    def watch_config(self, config):
+        from watchdog.events import PatternMatchingEventHandler
+        handler = PatternMatchingEventHandler(patterns=[".\\" + config.filename],
+                                              case_sensitive=True)
+
+        def f(event):
+            config.reload()
+            self.observer.sleep()
+            self.invalidate_config(config)
+            self.observer.wakeup()
+            print(f"Changes from '{config.filename}' applied")
+
+        handler.on_modified = f
+        self.observer.schedule(handler, ".", recursive=True)
+        self.observer.start()
 
     @staticmethod
     def invalidate_config(config: ConfigObj):
@@ -93,3 +114,20 @@ class ConfigManager:
             pointer.restore_default(key)
             pointer[key] = pointer[key]  # current = default
         print(f"Restore defaults for this parts of '{config.filename}'")
+
+    class LazyObserver(Observer):
+        def __init__(self, timeout=DEFAULT_OBSERVER_TIMEOUT):
+            super().__init__(timeout)
+            self._sleeping = False
+
+        def dispatch_events(self, *args, **kwargs):
+            if not self._sleeping:
+                super(ConfigManager.LazyObserver, self).dispatch_events(*args, **kwargs)
+
+        def sleep(self):
+            self._sleeping = True
+
+        def wakeup(self):
+            time.sleep(self.timeout)  # allow interim events to be queued
+            self.event_queue.queue.clear()
+            self._sleeping = False
