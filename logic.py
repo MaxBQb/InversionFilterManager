@@ -1,18 +1,13 @@
 import pyautogui as gui
 from winregal import RegKey
+from configobj import ConfigObj
 
 
 class App:
     def __init__(self):
-        from configobj import ConfigObj
-        from validate import Validator
         gui.FAILSAFE = False
         self.state_controller = FilterStateController(self)
-        self.config = ConfigObj(infile="config.ini",
-                                configspec="config_description.ini",
-                                create_empty=True,
-                                write_empty_values=True)
-        self.config.validate(Validator())
+        self.config = ConfigManager("config").get_config()
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -55,3 +50,27 @@ class FilterStateController(AppElement):
         if self.app.config["display"]["show_events"]:
             print(shortName, eventTypes.get(event, hex(event)))
         InversionFilterController.set(shortName == "System32\mspaint.exe")
+
+
+class ConfigManager:
+    def __init__(self, name: str):
+        self.name = name
+
+    def get_config(self):
+        config = ConfigObj(infile=self.name + ".ini",
+                           configspec=self.name + "_description.ini",
+                           create_empty=True,
+                           write_empty_values=True)
+        self.validate_config(config)
+        return config
+
+    def validate_config(self, config: ConfigObj):
+        from validate import Validator
+        test = config.validate(Validator(), copy=True)
+        if not test:
+            config.restore_defaults()
+            config.validate(Validator(), copy=True)
+            print("Invalid configuration found.")
+            print(f"Restore defaults for '{config.filename}'")
+        config.initial_comment = ["Feel free to edit this config file"]
+        config.write()
