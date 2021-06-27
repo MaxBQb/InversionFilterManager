@@ -4,8 +4,15 @@ from winregal import RegKey
 
 class App:
     def __init__(self):
+        from configobj import ConfigObj
+        from validate import Validator
         gui.FAILSAFE = False
         self.state_controller = FilterStateController(self)
+        self.config = ConfigObj(infile="config.ini",
+                                configspec="config_description.ini",
+                                create_empty=True,
+                                write_empty_values=True)
+        self.config.validate(Validator())
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -45,5 +52,6 @@ class FilterStateController(AppElement):
         from active_window_checker import get_window_info, eventTypes, getActiveWindow
         hwnd = getActiveWindow()
         title, processID, shortName, alt_hwnd = get_window_info(hwnd, idObject, dwEventThread)
-        print(shortName, eventTypes.get(event, hex(event)))
+        if self.app.config["display"]["show_events"]:
+            print(shortName, eventTypes.get(event, hex(event)))
         InversionFilterController.set(shortName == "System32\mspaint.exe")
