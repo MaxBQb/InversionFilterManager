@@ -77,7 +77,7 @@ class ConfigManager:
         handler = PatternMatchingEventHandler(patterns=[".\\" + config.filename],
                                               case_sensitive=True)
 
-        def f(event):
+        def on_modified(event):
             config.reload()
             self.observer.sleep()
             if self.invalidate_config(config):
@@ -86,7 +86,7 @@ class ConfigManager:
                 print(f"Changes for '{config.filename}' fixed & applied")
             self.observer.wakeup()
 
-        handler.on_modified = f
+        handler.on_modified = on_modified
         self.observer.schedule(handler, ".", recursive=True)
         self.observer.start()
 
