@@ -61,16 +61,32 @@ class ConfigManager:
                            configspec=self.name + "_description.ini",
                            create_empty=True,
                            write_empty_values=True)
-        self.validate_config(config)
+        self.invalidate_config(config)
         return config
 
-    def validate_config(self, config: ConfigObj):
+    @staticmethod
+    def invalidate_config(config: ConfigObj):
         from validate import Validator
-        test = config.validate(Validator(), copy=True)
-        if not test:
+        test = config.validate(Validator(), copy=True, preserve_errors=True)
+        if test is False:
             config.restore_defaults()
             config.validate(Validator(), copy=True)
             print("Invalid configuration found.")
             print(f"Restore defaults for '{config.filename}'")
+        elif test is not True:
+            ConfigManager.invalidate_parts(config, test)
         config.initial_comment = ["Feel free to edit this config file"]
         config.write()
+
+    @staticmethod
+    def invalidate_parts(config: ConfigObj, test: dict):
+        from configobj import flatten_errors
+        print("Invalid configuration parts found.")
+        for sections, key, error in flatten_errors(config, test):
+            pointer = config
+            for section in sections:
+                pointer = pointer[section]
+            print('.'.join(sections + [key]) + ":", error)
+            pointer.restore_default(key)
+            pointer[key] = pointer[key]  # current = default
+        print(f"Restore defaults for this parts of '{config.filename}'")
