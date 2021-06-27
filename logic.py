@@ -1,6 +1,7 @@
 import pyautogui as gui
 from winregal import RegKey
 from configobj import ConfigObj
+from asyncio import create_task
 
 
 class App:
@@ -11,7 +12,9 @@ class App:
 
     def run(self):
         from active_window_checker import listen_switch_events
-        listen_switch_events(self.state_controller.on_active_window_switched)
+        create_task(listen_switch_events(
+            self.state_controller.on_active_window_switched
+        ))
 
 
 class AppElement:
