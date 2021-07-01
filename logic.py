@@ -150,9 +150,15 @@ class InteractionManager(AppElement):
             'kp_add': self.append_current_app,
             'kp_subtract': self.delete_current_app,
         }
+
+        def make_callback(func, *args):
+            return lambda e: func(*args)
+
+        from inspect import signature
         for k, v in hotkeys.items():
-            hk.register((*initial_hotkey, k), callback=v)
-            hk.register((*special_hotkey, k), callback=lambda: v(True))
+            hk.register((*initial_hotkey, k), callback=make_callback(v))
+            if signature(v).parameters:
+                hk.register((*special_hotkey, k), callback=make_callback(v, True))
 
     def append_current_app(self, short_act=False):
         print('+')
