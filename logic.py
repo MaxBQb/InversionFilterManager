@@ -76,11 +76,10 @@ class ConfigManager(FileTracker):
 
     def reload_file(self):
         self.config.reload()
-        self.observer.sleep()
-        print(("Changes for '{}' applied"
-               if self.invalidate_config() else
-               "Changes for '{}' fixed & applied").format(self.config.filename))
-        self.observer.wakeup()
+        with self.observer.overlook():
+            print(("Changes for '{}' applied"
+                   if self.invalidate_config() else
+                   "Changes for '{}' fixed & applied").format(self.config.filename))
 
     def invalidate_config(self):
         from validate import Validator

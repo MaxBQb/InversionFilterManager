@@ -2,6 +2,7 @@ import time
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
+from contextlib import contextmanager
 
 
 class FileTracker:
@@ -48,6 +49,12 @@ class LazyObserver(Observer):
     def dispatch_events(self, *args, **kwargs):
         if not self._sleeping:
             super(LazyObserver, self).dispatch_events(*args, **kwargs)
+
+    @contextmanager
+    def overlook(self):
+        self.sleep()
+        yield
+        self.wakeup()
 
     def sleep(self):
         self._sleeping = True
