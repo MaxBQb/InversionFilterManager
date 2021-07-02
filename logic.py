@@ -108,7 +108,7 @@ class ConfigManager:
             ConfigManager.invalidate_parts(config, test, write_defaults)
         config.initial_comment = ["Feel free to edit this config file"]
         config.write()
-        return check_failed
+        return not check_failed
 
     @staticmethod
     def invalidate_parts(config: ConfigObj, test: dict, write_defaults=True):
