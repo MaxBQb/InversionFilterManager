@@ -12,7 +12,7 @@ http://stackoverflow.com/a/15898768/9585
 # using pywin32 for constants and ctypes for everything else seems a little
 # indecisive, but whatevs.
 import win32con
-
+from dataclasses import dataclass
 import sys
 import ctypes
 import ctypes.wintypes
@@ -53,11 +53,22 @@ threadFlag = getattr(win32con, 'THREAD_QUERY_LIMITED_INFORMATION',
                      win32con.THREAD_QUERY_INFORMATION)
 
 
-# store last event time for displaying time between events
-lastTime = 0
+@dataclass
+class WindowInfo:
+    hwnd: int
+    title: str = ""
+    path: str = ""
+    hwnd_alt: str = ""
+    pid: int = None
+
+    @property
+    def name(self) -> str:
+        return self.path.split('\\')[-1]
+
 
 def log(msg):
     print(msg)
+
 
 def logError(msg):
     sys.stdout.write(msg + '\n')
@@ -105,8 +116,10 @@ def getProcessID(dwEventThread, hwnd):
 
     return processID
 
+
 def getActiveWindow():
     return user32.GetForegroundWindow()
+
 
 def getProcessFilename(processID):
     hProcess = kernel32.OpenProcess(processFlag, 0, processID)
@@ -125,38 +138,24 @@ def getProcessFilename(processID):
         kernel32.CloseHandle(hProcess)
 
 
-def get_window_info(hwnd, idObject, dwEventThread):
+def get_window_info(hwnd, idObject, dwEventThread) -> WindowInfo:
+    winfo = WindowInfo(hwnd)
+
     length = user32.GetWindowTextLengthW(hwnd)
     title = ctypes.create_unicode_buffer(length + 1)
     user32.GetWindowTextW(hwnd, title, length + 1)
+    winfo.title = title.value
+    winfo.pid = getProcessID(dwEventThread, hwnd)
 
-    processID = getProcessID(dwEventThread, hwnd)
-
-    shortName = '?'
-    if processID:
-        filename = getProcessFilename(processID)
+    if winfo.pid:
+        winfo.path = getProcessFilename(winfo.pid)
 
     if hwnd:
-        hwnd = hex(hwnd)
+        winfo.hwnd_alt = hex(hwnd)
     elif idObject == win32con.OBJID_CURSOR:
-        hwnd = '<Cursor>'
+        winfo.hwnd_alt = '<Cursor>'
 
-    return title.value, processID, filename, hwnd
-
-
-def default_callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread,
-                     dwmsEventTime):
-    global lastTime
-    title, processID, shortName, alt_hwnd = get_window_info(hwnd, idObject, dwEventThread)
-
-    log(u"%s:%04.2f\t%-10s\t"
-        u"W:%-8s\tP:%-8d\tT:%-8d\t"
-        u"%s\t%s" % (
-        dwmsEventTime, float(dwmsEventTime - lastTime)/1000, eventTypes.get(event, hex(event)),
-        alt_hwnd, processID or -1, dwEventThread or -1,
-        shortName, title))
-
-    lastTime = dwmsEventTime
+    return winfo
 
 
 def setHook(WinEventProc, eventType):
@@ -171,7 +170,7 @@ def setHook(WinEventProc, eventType):
     )
 
 
-async def listen_switch_events(callback=default_callback):
+async def listen_switch_events(callback):
     ole32.CoInitialize(0)
 
     WinEventProc = WinEventProcType(callback)

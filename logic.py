@@ -43,7 +43,6 @@ class InversionFilterController:
     def toggle():
         gui.hotkey("ctrl", "win", "c")
 
-
 class FilterStateController(AppElement):
     def on_active_window_switched(self,
                                   hWinEventHook,
@@ -53,13 +52,11 @@ class FilterStateController(AppElement):
                                   idChild,
                                   dwEventThread,
                                   dwmsEventTime):
-        from active_window_checker import get_window_info, eventTypes, getActiveWindow
-        hwnd = getActiveWindow()
-        self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
-        title, processID, shortName, alt_hwnd = self.last_active_window
+        from active_window_checker import get_window_info, eventTypes
+        winfo = self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
         if self.app.config["display"]["show_events"]:
-            print(shortName, eventTypes.get(event, hex(event)))
-        InversionFilterController.set(shortName == "System32\mspaint.exe")
+            print(winfo.path, eventTypes.get(event, hex(event)))
+        InversionFilterController.set(winfo.name == "mspaint.exe")
 
 
 class ConfigManager:
@@ -166,22 +163,22 @@ class InteractionManager(AppElement):
                 hk.register((*special_hotkey, k), callback=make_callback(v, True))
 
     def append_current_app(self, short_act=False):
-        title, _, path, _ = self.app.state_controller.last_active_window
-        if not self.confirm(f"Do you want to add '{title}' to inversion rules?\n(Path: '{path}')"):
+        winfo = self.app.state_controller.last_active_window
+        if not self.confirm(f"Do you want to add '{winfo.title}' to inversion rules?\n(Path: '{winfo.path}')"):
             return
 
         rules = self.app.rules
         apps = rules['Apps']
-        name = self.prompt("Give name for your rule:", path.split('\\')[-1].strip(".exe").title())
+        name = self.prompt("Give name for your rule:", winfo.name.strip(".exe").title())
         app = {}
 
         if not short_act:
             app['path_regex'] = self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
-            app['path'] = self.prompt("Use this path:", path)
+            app['path'] = self.prompt("Use this path:", winfo.path)
 
-        if short_act or self.confirm(f"Do you want to add '{title}' by it's title?"):
+        if short_act or self.confirm(f"Do you want to add '{winfo.title}' by it's title?"):
             app['title_regex'] = self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
-            app['title'] = self.prompt("Use this title to check:", title)
+            app['title'] = self.prompt("Use this title to check:", winfo.title)
 
         apps[name] = app
         rules.write()
