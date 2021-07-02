@@ -13,8 +13,10 @@ class App:
         gui.FAILSAFE = False
         self.state_controller = FilterStateController(self)
         self.interaction_manager = InteractionManager(self)
-        self.config = ConfigManager("config").get_config()
-        self.rules = ConfigManager("rules").get_config(False)
+        self.config_manager = ConfigManager("config")
+        self.rules_manager = ConfigManager("rules")
+        self.config = self.config_manager.config
+        self.rules = self.rules_manager.config
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -62,68 +64,75 @@ class FilterStateController(AppElement):
 
 
 class ConfigManager:
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, name: str, write_defaults=True):
+        self.write_defaults = write_defaults
         self.observer = ConfigManager.LazyObserver()
+        self.config = ConfigObj(infile=name + ".ini",
+                                configspec=name + "_description.ini",
+                                create_empty=True,
+                                write_empty_values=True)
+        self.invalidate_config()
+        self.watch_config()
+        self.on_config_loaded()
 
-    def get_config(self, write_defaults=True) -> ConfigObj:
-        config = ConfigObj(infile=self.name + ".ini",
-                           configspec=self.name + "_description.ini",
-                           create_empty=True,
-                           write_empty_values=True)
-        self.invalidate_config(config, write_defaults)
-        self.watch_config(config, write_defaults)
-        return config
-
-    def watch_config(self, config, write_defaults=True):
+    def watch_config(self):
         from watchdog.events import PatternMatchingEventHandler
-        handler = PatternMatchingEventHandler(patterns=[".\\" + config.filename],
+        handler = PatternMatchingEventHandler(patterns=[".\\" + self.config.filename],
                                               case_sensitive=True)
 
         def on_modified(event):
-            config.reload()
+            self.config.reload()
             self.observer.sleep()
-            if self.invalidate_config(config, write_defaults):
-                print(f"Changes for '{config.filename}' applied")
-            else:
-                print(f"Changes for '{config.filename}' fixed & applied")
+            print(("Changes for '{}' applied"
+                   if self.invalidate_config() else
+                   "Changes for '{}' fixed & applied").format(self.config.filename))
             self.observer.wakeup()
+            self.on_config_loaded()
+            self.on_config_reloaded()
 
         handler.on_modified = on_modified
         self.observer.schedule(handler, ".", recursive=True)
         self.observer.start()
 
     @staticmethod
-    def invalidate_config(config: ConfigObj, write_defaults=True):
-        from validate import Validator
-        test = config.validate(Validator(), copy=write_defaults, preserve_errors=True)
-        check_failed = test is not True
-        if test is False:
-            config.restore_defaults()
-            config.validate(Validator(), copy=write_defaults)
-            print("Invalid configuration found.")
-            print(f"Restore defaults for '{config.filename}'")
-        elif check_failed:
-            ConfigManager.invalidate_parts(config, test, write_defaults)
-        config.initial_comment = ["Feel free to edit this config file"]
-        config.write()
-        return not check_failed
+    def on_config_reloaded():
+        pass
 
     @staticmethod
-    def invalidate_parts(config: ConfigObj, test: dict, write_defaults=True):
+    def on_config_loaded():
+        pass
+
+    def invalidate_config(self):
+        from validate import Validator
+        test = self.config.validate(Validator(),
+                                    copy=self.write_defaults,
+                                    preserve_errors=True)
+        check_failed = test is not True
+        if test is False:
+            self.config.restore_defaults()
+            self.config.validate(Validator(), copy=self.write_defaults)
+            print("Invalid configuration found.")
+            print(f"Restore defaults for '{self.config.filename}'")
+        elif check_failed:
+            self.invalidate_parts(test)
+        self.config.initial_comment = ["Feel free to edit this config file"]
+        self.config.write()
+        return not check_failed
+
+    def invalidate_parts(self, test: dict):
         from configobj import flatten_errors
         print("Invalid configuration parts found.")
-        for sections, key, error in flatten_errors(config, test):
+        for sections, key, error in flatten_errors(self.config, test):
             if not error:
                 error = "missing"
-            pointer = config
+            pointer = self.config
             for section in sections:
                 pointer = pointer[section]
             print('.'.join(sections + [key]) + ":", error)
             pointer.restore_default(key)
-            if write_defaults:
+            if self.write_defaults:
                 pointer[key] = pointer[key]  # current = default
-        print(f"Restore defaults for this parts of '{config.filename}'")
+        print(f"Restore defaults for this parts of '{self.config.filename}'")
 
     class LazyObserver(Observer):
         def __init__(self, timeout=DEFAULT_OBSERVER_TIMEOUT):
