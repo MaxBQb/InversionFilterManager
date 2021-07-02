@@ -166,7 +166,35 @@ class InteractionManager(AppElement):
                 hk.register((*special_hotkey, k), callback=make_callback(v, True))
 
     def append_current_app(self, short_act=False):
-        print('+')
+        title, _, path, _ = self.app.state_controller.last_active_window
+        if not self.confirm(f"Do you want to add '{title}' to inversion rules?\n(Path: '{path}')"):
+            return
+
+        rules = self.app.rules
+        apps = rules['Apps']
+        name = self.prompt("Give name for your rule:", path.split('\\')[-1].strip(".exe").title())
+        app = {}
+
+        if not short_act:
+            app['path_regex'] = self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
+            app['path'] = self.prompt("Use this path:", path)
+
+        if short_act or self.confirm(f"Do you want to add '{title}' by it's title?"):
+            app['title_regex'] = self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
+            app['title'] = self.prompt("Use this title to check:", title)
+
+        apps[name] = app
+        rules.write()
 
     def delete_current_app(self, short_act=False):
         print('-')
+
+    @staticmethod
+    def confirm(text) -> bool:
+        from pymsgbox import OK_TEXT
+        return OK_TEXT == gui.confirm(text)
+
+    @staticmethod
+    def prompt(text, default=""):
+        result = gui.prompt(text=text, default=default)
+        return result if result is not None else default
