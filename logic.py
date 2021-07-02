@@ -1,5 +1,6 @@
 import time
 import pyautogui as gui
+from keyboard import press_and_release as hotkey, add_hotkey
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 from winregal import RegKey
 from configobj import ConfigObj
@@ -41,7 +42,8 @@ class InversionFilterController:
 
     @staticmethod
     def toggle():
-        gui.hotkey("ctrl", "win", "c")
+        hotkey("ctrl+win+с")
+
 
 class FilterStateController(AppElement):
     def on_active_window_switched(self,
@@ -143,24 +145,18 @@ class ConfigManager:
 
 class InteractionManager(AppElement):
     def setup(self):
-        from system_hotkey import SystemHotkey
-        hk = SystemHotkey()
-        initial_hotkey = ('control', 'alt')
-        special_key = 'shift'
-        special_hotkey = (*initial_hotkey, special_key)
+        initial_hotkey = 'ctrl+alt+'
+        special_hotkey = initial_hotkey + 'shift+'
         hotkeys = {
-            'kp_add': self.append_current_app,
-            'kp_subtract': self.delete_current_app,
+            'plus': self.append_current_app,
+            'minus': self.delete_current_app,
         }
-
-        def make_callback(func, *args):
-            return lambda e: func(*args)
 
         from inspect import signature
         for k, v in hotkeys.items():
-            hk.register((*initial_hotkey, k), callback=make_callback(v))
             if signature(v).parameters:
-                hk.register((*special_hotkey, k), callback=make_callback(v, True))
+                add_hotkey(special_hotkey+k, v, args=(True,))
+            add_hotkey(initial_hotkey+k, v)
 
     def append_current_app(self, short_act=False):
         winfo = self.app.state_controller.last_active_window
