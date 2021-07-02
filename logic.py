@@ -1,11 +1,10 @@
 import time
 import pyautogui as gui
 from keyboard import press_and_release as hotkey, add_hotkey
-from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
+from file_tracker import FileTracker
 from winregal import RegKey
 from configobj import ConfigObj
 from asyncio import create_task
-from watchdog.observers import Observer
 
 
 class App:
@@ -63,65 +62,51 @@ class FilterStateController(AppElement):
         InversionFilterController.set(winfo.name == "mspaint.exe")
 
 
-class ConfigManager:
+class ConfigManager(FileTracker):
     def __init__(self, name: str, write_defaults=True):
         self.write_defaults = write_defaults
-        self.observer = ConfigManager.LazyObserver()
         self.config = ConfigObj(infile=name + ".ini",
                                 configspec=name + "_description.ini",
                                 create_empty=True,
                                 write_empty_values=True)
+        super().__init__(self.config.filename)
+
+    def load_file(self):
         self.invalidate_config()
-        self.watch_config()
-        self.on_config_loaded()
 
-    def watch_config(self):
-        from watchdog.events import PatternMatchingEventHandler
-        handler = PatternMatchingEventHandler(patterns=[".\\" + self.config.filename],
-                                              case_sensitive=True)
-
-        def on_modified(event):
-            self.config.reload()
-            self.observer.sleep()
-            print(("Changes for '{}' applied"
-                   if self.invalidate_config() else
-                   "Changes for '{}' fixed & applied").format(self.config.filename))
-            self.observer.wakeup()
-            self.on_config_loaded()
-            self.on_config_reloaded()
-
-        handler.on_modified = on_modified
-        self.observer.schedule(handler, ".", recursive=True)
-        self.observer.start()
-
-    @staticmethod
-    def on_config_reloaded():
-        pass
-
-    @staticmethod
-    def on_config_loaded():
-        pass
+    def reload_file(self):
+        self.config.reload()
+        self.observer.sleep()
+        print(("Changes for '{}' applied"
+               if self.invalidate_config() else
+               "Changes for '{}' fixed & applied").format(self.config.filename))
+        self.observer.wakeup()
 
     def invalidate_config(self):
         from validate import Validator
-        test = self.config.validate(Validator(),
+        validator = Validator()
+        test = self.config.validate(validator,
                                     copy=self.write_defaults,
                                     preserve_errors=True)
         check_failed = test is not True
         if test is False:
-            self.config.restore_defaults()
-            self.config.validate(Validator(), copy=self.write_defaults)
             print("Invalid configuration found.")
+            self.invalidate_full(Validator())
             print(f"Restore defaults for '{self.config.filename}'")
         elif check_failed:
+            print("Invalid configuration parts found.")
             self.invalidate_parts(test)
+            print(f"Restore defaults for this parts of '{self.config.filename}'")
         self.config.initial_comment = ["Feel free to edit this config file"]
         self.config.write()
         return not check_failed
 
+    def invalidate_full(self, validator):
+        self.config.restore_defaults()
+        self.config.validate(validator, copy=self.write_defaults)  # restore defaults as real values
+
     def invalidate_parts(self, test: dict):
         from configobj import flatten_errors
-        print("Invalid configuration parts found.")
         for sections, key, error in flatten_errors(self.config, test):
             if not error:
                 error = "missing"
@@ -132,24 +117,6 @@ class ConfigManager:
             pointer.restore_default(key)
             if self.write_defaults:
                 pointer[key] = pointer[key]  # current = default
-        print(f"Restore defaults for this parts of '{self.config.filename}'")
-
-    class LazyObserver(Observer):
-        def __init__(self, timeout=DEFAULT_OBSERVER_TIMEOUT):
-            super().__init__(timeout)
-            self._sleeping = False
-
-        def dispatch_events(self, *args, **kwargs):
-            if not self._sleeping:
-                super(ConfigManager.LazyObserver, self).dispatch_events(*args, **kwargs)
-
-        def sleep(self):
-            self._sleeping = True
-
-        def wakeup(self):
-            time.sleep(self.timeout)  # allow interim events to be queued
-            self.event_queue.queue.clear()
-            self._sleeping = False
 
 
 class InteractionManager(AppElement):
@@ -200,3 +167,4 @@ class InteractionManager(AppElement):
     def prompt(text, default=""):
         result = gui.prompt(text=text, default=default)
         return result if result is not None else default
+
