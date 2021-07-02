@@ -13,6 +13,7 @@ class App:
         self.state_controller = FilterStateController(self)
         self.interaction_manager = InteractionManager(self)
         self.config = ConfigManager("config").get_config()
+        self.rules = ConfigManager("rules").get_config(False)
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -54,7 +55,8 @@ class FilterStateController(AppElement):
                                   dwmsEventTime):
         from active_window_checker import get_window_info, eventTypes, getActiveWindow
         hwnd = getActiveWindow()
-        title, processID, shortName, alt_hwnd = get_window_info(hwnd, idObject, dwEventThread)
+        self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
+        title, processID, shortName, alt_hwnd = self.last_active_window
         if self.app.config["display"]["show_events"]:
             print(shortName, eventTypes.get(event, hex(event)))
         InversionFilterController.set(shortName == "System32\mspaint.exe")
@@ -65,16 +67,16 @@ class ConfigManager:
         self.name = name
         self.observer = ConfigManager.LazyObserver()
 
-    def get_config(self):
+    def get_config(self, write_defaults=True) -> ConfigObj:
         config = ConfigObj(infile=self.name + ".ini",
                            configspec=self.name + "_description.ini",
                            create_empty=True,
                            write_empty_values=True)
-        self.invalidate_config(config)
-        self.watch_config(config)
+        self.invalidate_config(config, write_defaults)
+        self.watch_config(config, write_defaults)
         return config
 
-    def watch_config(self, config):
+    def watch_config(self, config, write_defaults=True):
         from watchdog.events import PatternMatchingEventHandler
         handler = PatternMatchingEventHandler(patterns=[".\\" + config.filename],
                                               case_sensitive=True)
@@ -82,7 +84,7 @@ class ConfigManager:
         def on_modified(event):
             config.reload()
             self.observer.sleep()
-            if self.invalidate_config(config):
+            if self.invalidate_config(config, write_defaults):
                 print(f"Changes for '{config.filename}' applied")
             else:
                 print(f"Changes for '{config.filename}' fixed & applied")
@@ -93,32 +95,35 @@ class ConfigManager:
         self.observer.start()
 
     @staticmethod
-    def invalidate_config(config: ConfigObj):
+    def invalidate_config(config: ConfigObj, write_defaults=True):
         from validate import Validator
-        test = config.validate(Validator(), copy=True, preserve_errors=True)
+        test = config.validate(Validator(), copy=write_defaults, preserve_errors=True)
         check_failed = test is not True
         if test is False:
             config.restore_defaults()
-            config.validate(Validator(), copy=True)
+            config.validate(Validator(), copy=write_defaults)
             print("Invalid configuration found.")
             print(f"Restore defaults for '{config.filename}'")
         elif check_failed:
-            ConfigManager.invalidate_parts(config, test)
+            ConfigManager.invalidate_parts(config, test, write_defaults)
         config.initial_comment = ["Feel free to edit this config file"]
         config.write()
         return check_failed
 
     @staticmethod
-    def invalidate_parts(config: ConfigObj, test: dict):
+    def invalidate_parts(config: ConfigObj, test: dict, write_defaults=True):
         from configobj import flatten_errors
         print("Invalid configuration parts found.")
         for sections, key, error in flatten_errors(config, test):
+            if not error:
+                error = "missing"
             pointer = config
             for section in sections:
                 pointer = pointer[section]
             print('.'.join(sections + [key]) + ":", error)
             pointer.restore_default(key)
-            pointer[key] = pointer[key]  # current = default
+            if write_defaults:
+                pointer[key] = pointer[key]  # current = default
         print(f"Restore defaults for this parts of '{config.filename}'")
 
     class LazyObserver(Observer):

@@ -135,15 +135,13 @@ def get_window_info(hwnd, idObject, dwEventThread):
     shortName = '?'
     if processID:
         filename = getProcessFilename(processID)
-        if filename:
-            shortName = '\\'.join(filename.rsplit('\\', 2)[-2:])
 
     if hwnd:
         hwnd = hex(hwnd)
     elif idObject == win32con.OBJID_CURSOR:
         hwnd = '<Cursor>'
 
-    return title.value, processID, shortName, hwnd
+    return title.value, processID, filename, hwnd
 
 
 def default_callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread,
