@@ -1,10 +1,12 @@
-import time
 import pyautogui as gui
 from keyboard import press_and_release as hotkey, add_hotkey
 from file_tracker import FileTracker
 from winregal import RegKey
 from configobj import ConfigObj
 from asyncio import create_task
+import jsons
+from rules import RulesController
+from apps_rules import AppsRulesController
 
 
 class App:
@@ -13,9 +15,9 @@ class App:
         self.state_controller = FilterStateController(self)
         self.interaction_manager = InteractionManager(self)
         self.config_manager = ConfigManager("config")
-        self.rules_manager = ConfigManager("rules")
         self.config = self.config_manager.config
-        self.rules = self.rules_manager.config
+        self.apps_rules = AppsRulesController()
+        self.apps_rules_file_manager = RulesFileManager("apps", self.apps_rules)
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -43,7 +45,7 @@ class InversionFilterController:
 
     @staticmethod
     def toggle():
-        hotkey("ctrl+win+с")
+        hotkey("ctrl+win+c")
 
 
 class FilterStateController(AppElement):
@@ -118,6 +120,42 @@ class ConfigManager(FileTracker):
                 pointer[key] = pointer[key]  # current = default
 
 
+class RulesFileManager(FileTracker):
+    def __init__(self, name: str, rules_controller: RulesController):
+        self.rules = None
+        self.rules_controller = rules_controller
+        self.rules_controller.on_modified = self.save_rules
+        super().__init__(name+"_rules.json")
+
+    def load_file(self):
+        try:
+            with open(self.filename) as f:
+                self.rules = jsons.loads(f.read())
+            for key in self.rules:
+                self.rules[key] = jsons.load(self.rules[key], self.rules_controller.rule_type)
+        except FileNotFoundError:
+            self.rules = {}
+
+    def save_rules(self):
+        self.rules = self.rules_controller.rules
+        self.dump_file()
+
+    def dump_file(self):
+        with self.observer.overlook():
+            with open(self.filename, "w") as f:
+                f.write(jsons.dumps(self.rules,
+                                    dict(indent=2),
+                                    strip_properties=True,
+                                    strip_nulls=True))
+
+    def reload_file(self):
+        self.load_file()
+        print(f"Changes for '{self.filename}' applied")
+
+    def on_file_loaded(self):
+        self.rules_controller.load(self.rules)
+
+
 class InteractionManager(AppElement):
     def setup(self):
         initial_hotkey = 'ctrl+alt+'
@@ -138,21 +176,22 @@ class InteractionManager(AppElement):
         if not self.confirm(f"Do you want to add '{winfo.title}' to inversion rules?\n(Path: '{winfo.path}')"):
             return
 
-        rules = self.app.rules
-        apps = rules['Apps']
         name = self.prompt("Give name for your rule:", winfo.name.strip(".exe").title())
-        app = {}
+        rule = {}
 
+        from apps_rules import AppRule, Text
         if not short_act:
-            app['path_regex'] = self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
-            app['path'] = self.prompt("Use this path:", winfo.path)
+            rule['path'] = Text(
+                self.prompt("Use this path:", winfo.path),
+                self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
+            )
 
         if short_act or self.confirm(f"Do you want to add '{winfo.title}' by it's title?"):
-            app['title_regex'] = self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
-            app['title'] = self.prompt("Use this title to check:", winfo.title)
-
-        apps[name] = app
-        rules.write()
+            rule['title'] = Text(
+                self.prompt("Use this title to check:", winfo.title),
+                self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
+            )
+        self.app.apps_rules.add_rule(name, AppRule(**rule))
 
     def delete_current_app(self, short_act=False):
         print('-')
