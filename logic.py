@@ -15,7 +15,7 @@ class App:
         gui.FAILSAFE = False
         self.state_controller = FilterStateController(self)
         self.interaction_manager = InteractionManager(self)
-        self.config_manager = ConfigManager("config")
+        self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.apps_rules = AppsRulesController()
         self.apps_rules_file_manager = RulesFileManager("apps", self.apps_rules)
@@ -65,9 +65,8 @@ class FilterStateController(AppElement):
         InversionFilterController.set(winfo.name == "mspaint.exe")
 
 
-class ConfigManager(FileTracker):
-    def __init__(self, name: str, write_defaults=True):
-        self.write_defaults = write_defaults
+class ConfigFileManager(FileTracker):
+    def __init__(self, name: str):
         self.config = ConfigObj(infile=name + ".ini",
                                 configspec=name + "_description.ini",
                                 create_empty=True,
@@ -88,7 +87,7 @@ class ConfigManager(FileTracker):
         from validate import Validator
         validator = Validator()
         test = self.config.validate(validator,
-                                    copy=self.write_defaults,
+                                    copy=True,
                                     preserve_errors=True)
         check_failed = test is not True
         if test is False:
@@ -105,11 +104,11 @@ class ConfigManager(FileTracker):
 
     def invalidate_full(self, validator):
         self.config.restore_defaults()
-        self.config.validate(validator, copy=self.write_defaults)  # restore defaults as real values
+        self.config.validate(validator, copy=True)  # restore defaults as real values
 
-    def invalidate_parts(self, test: dict):
+    def invalidate_parts(self, validation_response: dict):
         from configobj import flatten_errors
-        for sections, key, error in flatten_errors(self.config, test):
+        for sections, key, error in flatten_errors(self.config, validation_response):
             if not error:
                 error = "missing"
             pointer = self.config
@@ -117,8 +116,7 @@ class ConfigManager(FileTracker):
                 pointer = pointer[section]
             print('.'.join(sections + [key]) + ":", error)
             pointer.restore_default(key)
-            if self.write_defaults:
-                pointer[key] = pointer[key]  # current = default
+            pointer[key] = pointer[key]  # current = default
 
 
 class RulesFileManager(FileTracker):
