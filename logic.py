@@ -5,6 +5,7 @@ from winregal import RegKey
 from configobj import ConfigObj
 from asyncio import create_task
 import jsons
+import yaml
 from rules import RulesController
 from apps_rules import AppsRulesController
 
@@ -125,14 +126,15 @@ class RulesFileManager(FileTracker):
         self.rules = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
-        super().__init__(name+"_rules.json")
+        super().__init__(name+"_rules.yaml")
 
     def load_file(self):
         try:
             with open(self.filename) as f:
-                self.rules = jsons.loads(f.read())
+                self.rules = yaml.safe_load(f)
             for key in self.rules:
-                self.rules[key] = jsons.load(self.rules[key], self.rules_controller.rule_type)
+                self.rules[key] = jsons.load(self.rules[key],
+                                             self.rules_controller.rule_type)
         except FileNotFoundError:
             self.rules = {}
 
@@ -143,10 +145,9 @@ class RulesFileManager(FileTracker):
     def dump_file(self):
         with self.observer.overlook():
             with open(self.filename, "w") as f:
-                f.write(jsons.dumps(self.rules,
-                                    dict(indent=2),
-                                    strip_properties=True,
-                                    strip_nulls=True))
+                yaml.dump(jsons.dump(self.rules,
+                                     strip_properties=True,
+                                     strip_nulls=True), f)
 
     def reload_file(self):
         self.load_file()

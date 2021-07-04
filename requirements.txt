@@ -11,6 +11,7 @@ PyRect==0.1.4
 PyScreeze==0.1.27
 PyTweening==1.0.3
 pywin32==301
+PyYAML==5.4.1
 six==1.16.0
 typish==1.9.2
 watchdog==2.1.3
