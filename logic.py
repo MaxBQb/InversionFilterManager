@@ -130,8 +130,9 @@ class RulesFileManager(FileTracker):
 
     def load_file(self):
         try:
-            with open(self.filename) as f:
-                self.rules = yaml.safe_load(f)
+            with self.observer.overlook():
+                with open(self.filename) as f:
+                    self.rules = yaml.safe_load(f)
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
                                              self.rules_controller.rule_type)
@@ -149,12 +150,11 @@ class RulesFileManager(FileTracker):
                                      strip_properties=True,
                                      strip_nulls=True), f)
 
-    def reload_file(self):
-        self.load_file()
-        print(f"Changes for '{self.filename}' applied")
-
     def on_file_loaded(self):
         self.rules_controller.load(self.rules)
+
+    def on_file_reloaded(self):
+        print(f"Changes for '{self.filename}' applied")
 
 
 class InteractionManager(AppElement):
