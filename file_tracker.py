@@ -26,12 +26,10 @@ class FileTracker:
         self.observer.schedule(handler, ".")
         self.observer.start()
 
-    @staticmethod
-    def on_file_reloaded():
+    def on_file_reloaded(self):
         pass
 
-    @staticmethod
-    def on_file_loaded():
+    def on_file_loaded(self):
         pass
 
     def load_file(self):
