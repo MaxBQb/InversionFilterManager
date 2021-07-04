@@ -46,7 +46,7 @@ class FilterStateController(AppElement):
         winfo = self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
         if self.app.config["display"]["show_events"]:
             print(winfo.path, eventTypes.get(event, hex(event)))
-        color_filter.set_active(winfo.name == "mspaint.exe")
+        color_filter.set_active(self.app.apps_rules.check(winfo))
 
 
 class ConfigFileManager(FileTracker):

@@ -1,5 +1,6 @@
 class Rule:
-    pass
+    def check(self, info) -> bool:
+        pass
 
 
 class RulesController:
@@ -17,3 +18,7 @@ class RulesController:
 
     def on_modified(self):
         pass
+
+    def check(self, info):
+        return any(rule.check(info)
+                   for rule in self.rules.values())
