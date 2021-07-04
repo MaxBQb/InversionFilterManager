@@ -8,7 +8,10 @@ import jsons
 import yaml
 from rules import RulesController
 from apps_rules import AppsRulesController
+from textwrap import shorten
+from functools import partial
 
+shorten = partial(shorten, width=60, placeholder="...")
 
 class App:
     def __init__(self):
@@ -145,7 +148,7 @@ class InteractionManager(AppElement):
         special_hotkey = initial_hotkey + 'shift+'
         hotkeys = {
             'plus': self.append_current_app,
-            'minus': self.delete_current_app,
+            'subtract': self.delete_current_app,
         }
 
         from inspect import signature
@@ -176,8 +179,32 @@ class InteractionManager(AppElement):
             )
         self.app.apps_rules.add_rule(name, AppRule(**rule))
 
-    def delete_current_app(self, short_act=False):
-        print('-')
+    def delete_current_app(self):
+        winfo = self.app.state_controller.last_active_window
+        if not self.app.apps_rules.check(winfo):
+            return
+
+        if not self.confirm(f"Do you want to remove '{winfo.title}' from inversion rules?\n(Path: '{winfo.path}')"):
+            return
+
+        rules = list(self.app.apps_rules.filter_rules(winfo))
+
+        if not rules:
+            gui.alert("Something went wrong, none of the rules matches this window!\n"
+                      "But the last check says it does...\n"
+                      "Please inform author of the script about this occasion :(")
+            return
+        elif len(rules) == 1:
+            if not self.confirm(f"One rule found: '{shorten(rules[0])}', remove it?"):
+                return
+        else:
+            if not self.confirm(f"Couple of rules found: [{shorten(', '.join(rules[:20]))}], remove them all?"):
+                if not self.confirm(f"Remove selected only?"):
+                    return
+
+                rules = [rule for rule in rules
+                         if self.confirm(f"Remove '{shorten(rule)}'?")]
+        self.app.apps_rules.remove_rules(rules)
 
     @staticmethod
     def confirm(text) -> bool:

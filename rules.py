@@ -16,9 +16,20 @@ class RulesController:
         self.rules[name] = rule
         self.on_modified()
 
+    def remove_rules(self, names):
+        if not names:
+            return
+
+        for name in names:
+            del self.rules[name]
+        self.on_modified()
+
     def on_modified(self):
         pass
 
     def check(self, info):
-        return any(rule.check(info)
-                   for rule in self.rules.values())
+        return next(self.filter_rules(info), None) is not None
+
+    def filter_rules(self, info):
+        return (name for name in self.rules
+                if self.rules[name].check(info))
