@@ -123,6 +123,8 @@ class RulesFileManager(FileTracker):
                                              self.rules_controller.rule_type)
         except FileNotFoundError:
             self.rules = {}
+            with open(self.filename, "w"):
+                pass
 
     def save_rules(self):
         self.rules = self.rules_controller.rules
