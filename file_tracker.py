@@ -51,8 +51,10 @@ class LazyObserver(Observer):
     @contextmanager
     def overlook(self):
         self.sleep()
-        yield
-        self.wakeup()
+        try:
+            yield
+        finally:
+            self.wakeup()
 
     def sleep(self):
         self._sleeping = True
