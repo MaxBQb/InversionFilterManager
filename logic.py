@@ -25,10 +25,38 @@ class App:
 
     def run(self):
         from active_window_checker import listen_switch_events
+        from auto_update import check_for_updates
+        create_task(check_for_updates(self.handle_update))
         create_task(listen_switch_events(
             self.state_controller.on_active_window_switched
         ))
         self.interaction_manager.setup()
+
+    def handle_update(self, new_path, current_path, backup_filename):
+        try:
+            from shutil import copyfile
+            from os import path
+
+            copy_list = [
+                self.config.filename,
+                self.apps_rules_file_manager.filename
+            ]
+
+            for filename in copy_list:
+                current_file_path = path.join(current_path, filename)
+                new_file_path = path.join(new_path, filename)
+                if path.exists(current_file_path):
+                    if not path.exists(new_file_path):
+                        copyfile(current_file_path, new_file_path)
+                    else:
+                        print(f"Skip {filename}: update contains same file")
+                else:
+                    print(f"Skip {filename}: no such file")
+
+        except Exception as e:
+            print("Failed to copy previous version data:", e)
+            print("You may do this manually, from", backup_filename)
+            print("Files to copy:", copy_list)
 
 
 class AppElement:
@@ -118,10 +146,8 @@ class RulesFileManager(FileTracker):
             with self.observer.overlook():
                 with open(self.filename) as f:
                     self.rules = yaml.safe_load(f)
-
             if self.rules is None:
                 self.rules = {}
-
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
                                              self.rules_controller.rule_type)

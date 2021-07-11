@@ -23,5 +23,5 @@ setup(console=['main.py'],
       name="InversionFilterManager",
       version=get_version("./_meta.py"),
       description="Inverts colors when you opens blinding white windows",
-      data_files=[('.', ["config_description.ini"])]
+      data_files=[('.', ["config_description.ini", "update.bat"])]
       )
