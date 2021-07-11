@@ -118,6 +118,10 @@ class RulesFileManager(FileTracker):
             with self.observer.overlook():
                 with open(self.filename) as f:
                     self.rules = yaml.safe_load(f)
+
+            if self.rules is None:
+                self.rules = {}
+
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
                                              self.rules_controller.rule_type)
