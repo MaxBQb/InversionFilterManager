@@ -25,6 +25,7 @@ get_meta = partial(get_entry, './_meta.py')
 setup(console=['main.py'],
       name=get_meta('__product_name__'),
       version=get_meta('__version__'),
+      author=get_meta('__author__'),
       description="Inverts colors when you opens blinding white windows",
       data_files=[('.', ["config_description.ini", "update.bat"])]
       )
