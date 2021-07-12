@@ -2,6 +2,7 @@ from distutils.core import setup
 import py2exe
 import codecs
 import os.path
+from functools import partial
 
 
 def read(rel_path):
@@ -10,18 +11,20 @@ def read(rel_path):
         return fp.read()
 
 
-def get_version(rel_path):
+def get_entry(rel_path, key):
     for line in read(rel_path).splitlines():
-        if line.startswith('__version__'):
+        if line.startswith(key):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
     else:
-        raise RuntimeError("Unable to find version string.")
+        raise RuntimeError(f"Unable to find {key} string.")
 
+
+get_meta = partial(get_entry, './_meta.py')
 
 setup(console=['main.py'],
-      name="InversionFilterManager",
-      version=get_version("./_meta.py"),
+      name=get_meta('__product_name__'),
+      version=get_meta('__version__'),
       description="Inverts colors when you opens blinding white windows",
       data_files=[('.', ["config_description.ini", "update.bat"])]
       )
