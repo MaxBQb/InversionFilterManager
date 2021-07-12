@@ -24,12 +24,13 @@ class VersionInfo:
 async def check_for_updates(on_update_applied=None, confirm_required=True):
     try:
         user, repo = "MaxBQb", "InversionFilterManager"
-        client_version = get_current_version()
-        print("Current version:", get_version_text(client_version))
+        from _meta import __version__
+        client_version = get_version(__version__)
+        print("Current version:", __version__)
         check_link = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
         last_version_info = get_latest_version_info(check_link)
         if last_version_info.version <= client_version or \
-           not last_version_info.release_info:
+                not last_version_info.release_info:
             print("No updates found")
             return
 
@@ -44,11 +45,6 @@ async def check_for_updates(on_update_applied=None, confirm_required=True):
         update(last_version_info.release_info, on_update_applied)
     except Exception as e:
         print("Update failed:", e)
-
-
-def get_current_version():
-    from _meta import __version__
-    return get_version(__version__)
 
 
 def get_latest_version_info(check_link) -> VersionInfo:
@@ -70,22 +66,10 @@ def get_latest_version_info(check_link) -> VersionInfo:
     return version_info
 
 
-def get_version_from_tag(tag: str):
-    """ tag: format v1.1.1
-    """
-    return get_version(tag[1:])
-
-
 def get_version(version: str):
     """ str("1.0.0") -> tuple(1, 0, 0)
     """
     return tuple(int(i) for i in version.split("."))
-
-
-def get_version_text(version: tuple):
-    """ tuple(1, 0, 0) -> str("1.0.0")
-    """
-    return '.'.join((str(num) for num in version))
 
 
 def update(release_info: ReleaseArchiveInfo, on_update_applied):
@@ -109,7 +93,7 @@ def update(release_info: ReleaseArchiveInfo, on_update_applied):
     release_archive_path = pretty_downloader.download(release_info.download_link, update_path, block_size=8192)
     unpack_once(release_archive_path, update_path)
     make_backup(app_path, backup_path, backup_name)
-    shutil.move(os.path.join(os.path.realpath(app_path), backup_name+".zip"), parent_path)
+    shutil.move(os.path.join(os.path.realpath(app_path), backup_name + ".zip"), parent_path)
 
     if callable(on_update_applied):
         on_update_applied(
@@ -146,25 +130,6 @@ def complete_update_win32(current_path, new_path):
                      )
     # Any alternative suggested! here is very bad solution
     os._exit(0)
-
-
-def disable_exit_for_threadpool_executor():
-    import atexit
-    from concurrent.futures import thread
-    atexit.unregister(thread._python_exit)
-
-
-def safe_rename(old_filename, new_filename) -> bool:
-    try:
-        if os.path.isfile(new_filename):
-            os.remove(new_filename)
-        os.rename(old_filename, new_filename)
-        return True
-    except OSError as e:
-        (errno, strerror) = e.args
-        print(f"Unable to rename {old_filename} to {new_filename}:",
-              f"({errno}) {strerror}")
-        return False
 
 
 def unpack_once(filename, extract_dir):
