@@ -99,7 +99,8 @@ def update(release_info: ReleaseArchiveInfo, on_update_applied):
     backup_name = app_dir + "_old"
     backup_path = app_path + "_old"
 
-    make_empty_dir(update_path)
+    rmdir(update_path)
+    os.mkdir(update_path)
     print("Download latest release:", release_info.download_link)
     from pretty_downloader import pretty_downloader
     release_archive_path = pretty_downloader.download(release_info.download_link, update_path, block_size=8192)
@@ -123,8 +124,8 @@ def update(release_info: ReleaseArchiveInfo, on_update_applied):
 def make_backup(origin_path, backup_path, backup_name):
     backup_filename = backup_name + ".zip"
     archive_path = os.path.join(os.path.split(backup_path)[0], backup_filename)
+    rmdir(backup_path)
     shutil.copytree(origin_path, backup_path)
-    print(archive_path, os.path.exists(archive_path))
     if os.path.exists(archive_path):
         os.remove(archive_path)
     shutil.make_archive(backup_name, "zip", backup_path)
@@ -149,10 +150,9 @@ def unpack_once(filename, extract_dir):
     os.remove(filename)
 
 
-def make_empty_dir(path):
+def rmdir(path):
     if os.path.isdir(path):
         shutil.rmtree(path, True)
-    os.mkdir(path)
 
 
 def check_write_access(path):
