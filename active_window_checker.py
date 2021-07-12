@@ -183,7 +183,7 @@ async def listen_switch_events(callback):
 
     msg = ctypes.wintypes.MSG()
     while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) != 0:
-        user32.TranslateMessageW(msg)
+        user32.TranslateMessage(msg)
         user32.DispatchMessageW(msg)
 
     for hookID in hookIDs:
