@@ -23,22 +23,33 @@ class VersionInfo:
 
 async def check_for_updates(on_update_applied=None, confirm_required=True):
     try:
-        user, repo = "MaxBQb", "InversionFilterManager"
-        from _meta import __version__
-        client_version = get_version(__version__)
-        print("Current version:", __version__)
-        check_link = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
-        last_version_info = get_latest_version_info(check_link)
+        import _meta as app
+        client_version = get_version(app.__version__)
+        print("Current version:", app.__version__)
+        last_version_info = get_latest_version_info(
+            app.__author__,
+            app.__product_name__
+        )
+
         if last_version_info.version <= client_version or \
                 not last_version_info.release_info:
             print("No updates found")
+            return
+
+        print("Latest version:", last_version_info.version_text)
+
+        if sys.argv[0].endswith(".py"):
+            print("ATTENTION: .py script updates aren't supported!")
+            print("If you aren't developer, please use .exe version instead")
+            print("You can get it here:",
+                  last_version_info.release_info.download_link)
             return
 
         if confirm_required:
             from logic import InteractionManager as im
             from hurry.filesize import size, alternative
             file_size = size(last_version_info.release_info.size, alternative)
-            if not im.confirm(f"{repo} have new release {last_version_info.version_text}, "
+            if not im.confirm(f"{app.__product_name__} have new release {last_version_info.version_text}, "
                               f"download update ({file_size})?"):
                 return
 
@@ -47,9 +58,10 @@ async def check_for_updates(on_update_applied=None, confirm_required=True):
         print("Update failed:", e)
 
 
-def get_latest_version_info(check_link) -> VersionInfo:
+def get_latest_version_info(user, repo) -> VersionInfo:
     import json
     import requests
+    check_link = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
     data = json.loads(requests.get(check_link).text)
     version_info = VersionInfo(
         data.get('tag_name', "v0.0.0")[1:]
