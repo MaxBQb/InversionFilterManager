@@ -1,18 +1,47 @@
 import os
 import sys
 import shutil
+from dataclasses import dataclass
 
 
-async def check_for_updates(on_update_applied=None):
+@dataclass
+class ReleaseArchiveInfo:
+    name: str
+    size: int
+    download_link: str
+
+
+@dataclass
+class VersionInfo:
+    version_text: str
+    release_info: ReleaseArchiveInfo = None
+
+    @property
+    def version(self):
+        return get_version(self.version_text)
+
+
+async def check_for_updates(on_update_applied=None, confirm_required=True):
     try:
         user, repo = "MaxBQb", "InversionFilterManager"
-        client = get_current_version()
+        client_version = get_current_version()
+        print("Current version:", get_version_text(client_version))
         check_link = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
-        server = get_latest_version(check_link)
-        if server <= client:
+        last_version_info = get_latest_version_info(check_link)
+        if last_version_info.version <= client_version or \
+           not last_version_info.release_info:
+            print("No updates found")
             return
-        download_link = f"https://github.com/{user}/{repo}/releases/latest/download/release.zip"
-        update(download_link, on_update_applied)
+
+        if confirm_required:
+            from logic import InteractionManager as im
+            from hurry.filesize import size, alternative
+            file_size = size(last_version_info.release_info.size, alternative)
+            if not im.confirm(f"{repo} have new release {last_version_info.version_text}, "
+                              f"download update ({file_size})?"):
+                return
+
+        update(last_version_info.release_info, on_update_applied)
     except Exception as e:
         print("Update failed:", e)
 
@@ -22,11 +51,23 @@ def get_current_version():
     return get_version(__version__)
 
 
-def get_latest_version(check_link):
+def get_latest_version_info(check_link) -> VersionInfo:
     import json
     import requests
-    json_data = json.loads(requests.get(check_link).text)
-    return get_version_from_tag(json_data['tag_name'])
+    data = json.loads(requests.get(check_link).text)
+    version_info = VersionInfo(
+        data.get('tag_name', "v0.0.0")[1:]
+    )
+    assets = data.get('assets', [])
+    for asset in assets:
+        if asset.get("content_type") == "application/zip":
+            version_info.release_info = ReleaseArchiveInfo(
+                asset.get("name"),
+                asset.get("size"),
+                asset.get("browser_download_url")
+            )
+            break
+    return version_info
 
 
 def get_version_from_tag(tag: str):
@@ -41,7 +82,13 @@ def get_version(version: str):
     return tuple(int(i) for i in version.split("."))
 
 
-def update(download_link, on_update_applied):
+def get_version_text(version: tuple):
+    """ tuple(1, 0, 0) -> str("1.0.0")
+    """
+    return '.'.join((str(num) for num in version))
+
+
+def update(release_info: ReleaseArchiveInfo, on_update_applied):
     app_path = os.path.dirname(sys.argv[0])
 
     if not check_write_access(app_path):
@@ -57,8 +104,9 @@ def update(download_link, on_update_applied):
     backup_path = app_path + "_old"
 
     make_empty_dir(update_path)
+    print("Download latest release:", release_info.download_link)
     from pretty_downloader import pretty_downloader
-    release_archive_path = pretty_downloader.download(download_link, update_path, block_size=8192)
+    release_archive_path = pretty_downloader.download(release_info.download_link, update_path, block_size=8192)
     unpack_once(release_archive_path, update_path)
     make_backup(app_path, backup_path, backup_name)
     shutil.move(os.path.join(os.path.realpath(app_path), backup_name+".zip"), parent_path)

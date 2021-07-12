@@ -26,7 +26,9 @@ class App:
     def run(self):
         from active_window_checker import listen_switch_events
         from auto_update import check_for_updates
-        create_task(check_for_updates(self.handle_update))
+        if self.config["update"]["check_for_updates"]:
+            create_task(check_for_updates(self.handle_update,
+                                          self.config["update"]["ask_before_update"]))
         create_task(listen_switch_events(
             self.state_controller.on_active_window_switched
         ))
