@@ -198,7 +198,7 @@ class InteractionManager(AppElement):
         if not self.confirm(f"Do you want to add '{winfo.title}' to inversion rules?\n(Path: '{winfo.path}')"):
             return
 
-        name = self.prompt("Give name for your rule:", winfo.name.strip(".exe").title())
+        name = self.prompt("Give name for your rule:", winfo.name.removesuffix(".exe").title())
         rule = {}
 
         from apps_rules import AppRule, Text
