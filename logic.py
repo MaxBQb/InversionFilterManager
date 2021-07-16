@@ -141,7 +141,7 @@ class RulesFileManager(FileTracker):
         self.rules = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
-        super().__init__(name+"_rules.yaml")
+        super().__init__(name + "_rules.yaml")
 
     def load_file(self):
         try:
@@ -153,6 +153,7 @@ class RulesFileManager(FileTracker):
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
                                              self.rules_controller.rule_type)
+            self.dump_file()
         except FileNotFoundError:
             self.rules = {}
             with open(self.filename, "w"):
