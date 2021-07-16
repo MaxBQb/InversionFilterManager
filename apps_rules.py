@@ -10,9 +10,11 @@ class Text(Rule):
     is_regex: bool = False
 
     def __post_init__(self):
-        self.check = self.check_regex \
-            if self.regex else \
-            self.check_text
+        if self.is_regex:
+            self.check = self.check_regex
+        else:
+            self.check = self.check_text
+            self.is_regex = None
 
     @property
     def regex(self):
