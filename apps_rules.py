@@ -11,21 +11,21 @@ class Text(Rule):
 
     def __post_init__(self):
         if self.is_regex:
-            self.check = self.check_regex
+            self.check = self._check_regex
+            self._regex = re.compile(self.raw)
         else:
-            self.check = self.check_text
+            self.check = self._check_text
             self.is_regex = None
+            self._regex = None
 
     @property
     def regex(self):
-        if not self.is_regex:
-            return None
-        return re.compile(self.raw)
+        return self._regex
 
-    def check_text(self, info: str) -> bool:
+    def _check_text(self, info: str) -> bool:
         return info == self.raw
 
-    def check_regex(self, info: str) -> bool:
+    def _check_regex(self, info: str) -> bool:
         return self.regex.fullmatch(info) is not None
 
 

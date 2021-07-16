@@ -168,6 +168,7 @@ class RulesFileManager(FileTracker):
             with open(self.filename, "w") as f:
                 yaml.dump(jsons.dump(self.rules,
                                      strip_properties=True,
+                                     strip_privates=True,
                                      strip_nulls=True), f)
 
     def on_file_loaded(self):
