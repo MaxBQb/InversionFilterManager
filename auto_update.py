@@ -126,17 +126,18 @@ def make_backup(origin_path, backup_path, backup_name):
     archive_path = os.path.join(os.path.split(backup_path)[0], backup_filename)
     rmdir(backup_path)
     shutil.copytree(origin_path, backup_path)
-    if os.path.exists(archive_path):
-        os.remove(archive_path)
+    try_remove_file(archive_path)
     shutil.make_archive(backup_name, "zip", backup_path)
     shutil.rmtree(backup_path)
     return archive_path
 
 
 def complete_update_win32(current_path, new_path):
+    update_script_path = "..\\update.bat"
+    try_remove_file(update_script_path)
     shutil.move(".\\update.bat", "..\\")
     import subprocess
-    subprocess.Popen(["..\\update.bat",
+    subprocess.Popen([update_script_path,
                       os.path.basename(current_path),
                       os.path.basename(new_path)],
                      creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -160,3 +161,8 @@ def check_write_access(path):
     if not access:
         print("Unable to write to", path)
     return access
+
+
+def try_remove_file(path):
+    if os.path.exists(path):
+        os.remove(path)
