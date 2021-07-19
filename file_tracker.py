@@ -70,6 +70,8 @@ class LazyObserver(Observer):
             self.wakeup()
 
     def sleep(self):
+        if not self.is_alive():
+            return
         self._is_sleeping = True
         self._still_sleepy = True
 
