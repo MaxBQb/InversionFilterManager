@@ -70,7 +70,7 @@ class RulesFileManager(FileTracker):
         try:
             with self.observer.overlook():
                 with open(self.filename) as f:
-                    self.rules = yaml.safe_load(f)
+                    self.rules = yaml.load(f, Loader=yaml.CSafeLoader)
             if self.rules is None:
                 self.rules = {}
             for key in self.rules:
@@ -92,7 +92,8 @@ class RulesFileManager(FileTracker):
                     yaml.dump(jsons.dump(self.rules,
                                          strip_properties=True,
                                          strip_privates=True,
-                                         strip_nulls=True), f)
+                                         strip_nulls=True),
+                              f, yaml.CDumper)
 
     def on_file_loaded(self):
         self.rules_controller.load(self.rules)
