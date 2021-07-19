@@ -95,10 +95,9 @@ class ConfigFileManager(FileTracker):
 
     def reload_file(self):
         self.config.reload()
-        with self.observer.overlook():
-            print(("Changes for '{}' applied"
-                   if self.invalidate_config() else
-                   "Changes for '{}' fixed & applied").format(self.config.filename))
+        print(("Changes for '{}' applied"
+               if self.invalidate_config() else
+               "Changes for '{}' fixed & applied").format(self.config.filename))
 
     def invalidate_config(self):
         from validate import Validator
@@ -116,7 +115,8 @@ class ConfigFileManager(FileTracker):
             self.invalidate_parts(test)
             print(f"Restore defaults for this parts of '{self.config.filename}'")
         self.config.initial_comment = ["Feel free to edit this config file"]
-        self.config.write()
+        with self.observer.overlook():
+            self.config.write()
         return not check_failed
 
     def invalidate_full(self, validator):
@@ -153,11 +153,10 @@ class RulesFileManager(FileTracker):
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
                                              self.rules_controller.rule_type)
-            self.dump_file()
         except FileNotFoundError:
             self.rules = {}
-            with open(self.filename, "w"):
-                pass
+        finally:
+            self.dump_file()
 
     def save_rules(self):
         self.rules = self.rules_controller.rules
@@ -166,10 +165,11 @@ class RulesFileManager(FileTracker):
     def dump_file(self):
         with self.observer.overlook():
             with open(self.filename, "w") as f:
-                yaml.dump(jsons.dump(self.rules,
-                                     strip_properties=True,
-                                     strip_privates=True,
-                                     strip_nulls=True), f)
+                if self.rules:
+                    yaml.dump(jsons.dump(self.rules,
+                                         strip_properties=True,
+                                         strip_privates=True,
+                                         strip_nulls=True), f)
 
     def on_file_loaded(self):
         self.rules_controller.load(self.rules)
