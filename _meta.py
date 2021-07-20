@@ -1,3 +1,3 @@
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __product_name__ = "InversionFilterManager"
 __author__ = "MaxBQb"
