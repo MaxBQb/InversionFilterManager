@@ -100,21 +100,26 @@ class InteractionManager(AppElement):
             return
 
         name = self.prompt("Give name for your rule:", winfo.name.removesuffix(".exe").title())
-        rule = {}
 
-        from apps_rules import AppRule, Text
+        from apps_rules import AppRule
         if not short_act:
-            rule['path'] = Text(
+            path = (
                 self.prompt("Use this path:", winfo.path),
                 self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
             )
+        else:
+            path = (winfo.path, False)
 
         if short_act or self.confirm(f"Do you want to add '{winfo.title}' by it's title?"):
-            rule['title'] = Text(
+            title = (
                 self.prompt("Use this title to check:", winfo.title),
                 self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
             )
-        self.app.apps_rules.add_rule(name, AppRule(**rule))
+        else:
+            title = (None, False)
+        rule = AppRule()
+        rule.with_options(path, title)
+        self.app.apps_rules.add_rule(name, rule)
 
     def delete_current_app(self):
         winfo = self.app.state_controller.last_active_window
