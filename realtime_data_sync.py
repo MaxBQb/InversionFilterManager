@@ -61,7 +61,7 @@ class ConfigFileManager(FileTracker):
 
 class RulesFileManager(FileTracker):
     def __init__(self, name: str, rules_controller: RulesController):
-        self.rules = None
+        self.rules: dict[str, rules_controller.RT] = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
         super().__init__(name + "_rules.yaml")
@@ -75,7 +75,7 @@ class RulesFileManager(FileTracker):
                 self.rules = {}
             for key in self.rules:
                 self.rules[key] = jsons.load(self.rules[key],
-                                             self.rules_controller.rule_type)
+                                             self.rules_controller.RT)
         except FileNotFoundError:
             self.rules = {}
         finally:

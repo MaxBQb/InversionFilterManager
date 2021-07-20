@@ -37,4 +37,4 @@ class AppRule(Rule):
 
 
 class AppsRulesController(RulesController):
-    rule_type = AppRule
+    RT = AppRule
