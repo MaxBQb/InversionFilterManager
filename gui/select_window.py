@@ -42,15 +42,17 @@ TITLE_BUTTON_OPTIONS = {
     ),
 } | PATH_BUTTON_OPTIONS
 
-PATH_BUTTONS = ButtonSwitchController(PATH_BUTTON_OPTIONS, ID.BUTTON_PATH)
-TITLE_BUTTONS = ButtonSwitchController(TITLE_BUTTON_OPTIONS, ID.BUTTON_TITLE)
-
 
 def select_window(winfo: WindowInfo):
+    path_buttons = ButtonSwitchController(PATH_BUTTON_OPTIONS, ID.BUTTON_PATH)
+    title_buttons = ButtonSwitchController(TITLE_BUTTON_OPTIONS, ID.BUTTON_TITLE)
+
     window = sg.Window(WINDOW_TITLE, build_view(
         winfo.title,
         winfo.path,
         winfo.name,
+        path_buttons,
+        title_buttons
     ), finalize=True)
     gui_utils.deny_maximize(window)
     gui_utils.deny_minimize(window)
@@ -60,15 +62,15 @@ def select_window(winfo: WindowInfo):
     while True:
         event, values = window.read()
 
-        if TITLE_BUTTONS.handle_event(event, window):
+        if title_buttons.handle_event(event, window):
             window[ID.INPUT_TITLE].update(
-                disabled=TITLE_BUTTONS.is_selected(ButtonState.DISABLED)
+                disabled=title_buttons.is_selected(ButtonState.DISABLED)
             )
 
-        PATH_BUTTONS.handle_event(event, window)
+        path_buttons.handle_event(event, window)
         if event == ID.SUBMIT:
-            context[get_key_by_state(PATH_BUTTONS, 'path')] = values[ID.INPUT_PATH]
-            title_key = get_key_by_state(TITLE_BUTTONS, 'title')
+            context[get_key_by_state(path_buttons, 'path')] = values[ID.INPUT_PATH]
+            title_key = get_key_by_state(title_buttons, 'title')
             if title_key:
                 context[title_key] = values[ID.INPUT_TITLE]
             name = values[ID.INPUT_NAME]
@@ -91,7 +93,8 @@ def get_key_by_state(button_switch: ButtonSwitchController, key: str):
     return key
 
 
-def build_view(title: str, path: str, name: str):
+def build_view(title: str, path: str, name: str,
+               path_buttons, title_buttons):
     name = name.removesuffix(".exe").title()
     pad = h_pad, v_pad = 12, 12
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
@@ -112,14 +115,14 @@ def build_view(title: str, path: str, name: str):
             sg.InputText(default_text=path, key=ID.INPUT_PATH,
                          **gui_utils.INPUT_DEFAULTS,
                          pad=((20, h_pad), v_pad)),
-            *PATH_BUTTONS.get_buttons(common_switcher_options)
+            *path_buttons.get_buttons(common_switcher_options)
         ],
         [
             sg.Text("Title", tooltip="Text in upper left corner of each program"),
             sg.InputText(default_text=title, key=ID.INPUT_TITLE,
                          **gui_utils.INPUT_DEFAULTS,
                          pad=((32, h_pad), v_pad)),
-            *TITLE_BUTTONS.get_buttons(common_switcher_options)
+            *title_buttons.get_buttons(common_switcher_options)
         ],
         [sg.Button("OK", key=ID.SUBMIT, **gui_utils.BUTTON_DEFAULTS,
                    auto_size_button=False,
