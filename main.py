@@ -3,8 +3,10 @@ from asyncio import run
 
 async def main():
     from logic import App
+    from gui.gui_utils import init_theme
     print('Hi, there!')
     app = App()
+    init_theme()
     app.run()
     print("I'm async")
 

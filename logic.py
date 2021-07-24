@@ -5,6 +5,7 @@ from asyncio import create_task
 from apps_rules import AppsRulesController
 from textwrap import shorten
 from functools import partial
+from apps_rules import AppRule
 
 shorten = partial(shorten, width=60, placeholder="...")
 
@@ -94,32 +95,14 @@ class InteractionManager(AppElement):
                 add_hotkey(special_hotkey+k, v, args=(True,))
             add_hotkey(initial_hotkey+k, v)
 
-    def append_current_app(self, short_act=False):
+    def append_current_app(self):
+        from gui.select_window import select_window
         winfo = self.app.state_controller.last_active_window
-        if not self.confirm(f"Do you want to add '{winfo.title}' to inversion rules?\n(Path: '{winfo.path}')"):
+        res = select_window(winfo)
+        if not res:
             return
-
-        name = self.prompt("Give name for your rule:", winfo.name.removesuffix(".exe").title())
-
-        from apps_rules import AppRule
-        if not short_act:
-            path = (
-                self.prompt("Use this path:", winfo.path),
-                self.confirm(f"Do you want to use regex matching for path?\n(Default = no)")
-            )
-        else:
-            path = (winfo.path, False)
-
-        if short_act or self.confirm(f"Do you want to add '{winfo.title}' by it's title?"):
-            title = (
-                self.prompt("Use this title to check:", winfo.title),
-                self.confirm(f"Do you want to use regex matching for title?\n(Default = no)")
-            )
-        else:
-            title = (None, False)
-        rule = AppRule()
-        rule.with_options(path, title)
-        self.app.apps_rules.add_rule(name, rule)
+        self.app.apps_rules.add_rule(res[1], AppRule(**res[0]))
+        return
 
     def delete_current_app(self):
         winfo = self.app.state_controller.last_active_window
