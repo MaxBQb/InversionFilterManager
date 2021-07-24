@@ -16,17 +16,6 @@ class AppRule(Rule):
     def __post_init__(self):
         self._define_text_matchers()
 
-    def with_options(self,
-                     path: tuple[str, bool],
-                     title: tuple[str, bool]):
-        text_matcher_fields = (
-            ('path', path),
-            ('title', title),
-        )
-        for field, value in text_matcher_fields:
-            self._set_text_matcher(field, get_matcher(*value))
-            self._set_text_matcher_raw(field, *value)
-
     def check(self, info: WindowInfo) -> bool:
         if not self._is_path_match(info.path):
             return False
