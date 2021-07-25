@@ -105,15 +105,14 @@ class InteractionManager(AppElement):
         return
 
     def delete_current_app(self):
+        from gui.select_rules import select_rules
         winfo = self.app.state_controller.last_active_window
         if not self.app.apps_rules.check(winfo):
             return
 
-        if not self.confirm(f"Do you want to remove '{winfo.title}' from inversion rules?\n(Path: '{winfo.path}')"):
-            return
-
         rules = list(self.app.apps_rules.filter_rules(winfo))
-
+        select_rules(rules)
+        return
         if not rules:
             gui.alert("Something went wrong, none of the rules matches this window!\n"
                       "But the last check says it does...\n"

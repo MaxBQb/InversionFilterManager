@@ -1,6 +1,7 @@
 from PySimpleGUI import theme, Titlebar, TITLEBAR_MAXIMIZE_KEY, TITLEBAR_MINIMIZE_KEY
 from _meta import __product_name__ as app_name
 
+
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
     use_ttk_buttons=True,
@@ -42,3 +43,7 @@ def deny_minimize(window):
     Apply on custom titlebar only
     '''
     hide(window, TITLEBAR_MINIMIZE_KEY)
+
+
+def join_id(*ids: str):
+    return '-'.join(ids)

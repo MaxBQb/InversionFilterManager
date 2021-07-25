@@ -13,3 +13,9 @@ def field_names_to_values(*args, **kwargs):
 
     # for @field_names_to_values(format="left_mid{}dle_right")
     return _field_names_to_values(*args, **kwargs)
+
+
+def ellipsis_trunc(text: str, width=12):
+    if len(text) <= width or width < 1:
+        return text
+    return text[:width-1].rstrip() + "…"
