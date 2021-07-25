@@ -115,14 +115,14 @@ def build_view(title: str, path: str, name: str,
             sg.InputText(default_text=path, key=ID.INPUT_PATH,
                          **gui_utils.INPUT_DEFAULTS,
                          pad=((20, h_pad), v_pad)),
-            *path_buttons.get_buttons(common_switcher_options)
+            path_buttons.get_button(common_switcher_options)
         ],
         [
             sg.Text("Title", tooltip="Text in upper left corner of each program"),
             sg.InputText(default_text=title, key=ID.INPUT_TITLE,
                          **gui_utils.INPUT_DEFAULTS,
                          pad=((32, h_pad), v_pad)),
-            *title_buttons.get_buttons(common_switcher_options)
+            title_buttons.get_button(common_switcher_options)
         ],
         [sg.Button("OK", key=ID.SUBMIT, **gui_utils.BUTTON_DEFAULTS,
                    auto_size_button=False,

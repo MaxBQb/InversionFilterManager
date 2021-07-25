@@ -1,4 +1,4 @@
-from PySimpleGUI import Button, Window
+from PySimpleGUI import Button, Window, Column
 from gui.gui_utils import BUTTON_DEFAULTS
 
 
@@ -13,11 +13,11 @@ class ButtonSwitchController:
         ]
         self.selected = self.keys[0]
 
-    def get_buttons(self, common_options=BUTTON_DEFAULTS):
-        return [
+    def get_button(self, common_options=BUTTON_DEFAULTS):
+        return Column([[
             Button(**(self.get_button_options(state) | common_options))
             for state in self.states
-        ]
+        ]], pad=(0, 0))
 
     def get_button_options(self, state: str) -> dict:
         return self.options.get(state) | dict(
