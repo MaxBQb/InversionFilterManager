@@ -36,11 +36,11 @@ PATH_BUTTON_OPTIONS = {
 }
 
 TITLE_BUTTON_OPTIONS = {
-    ButtonState.DISABLED: dict(
-        tooltip="Skip matching of this field",
-        button_color="#2F4F4F",
-    ),
-} | PATH_BUTTON_OPTIONS
+                           ButtonState.DISABLED: dict(
+                               tooltip="Skip matching of this field",
+                               button_color="#2F4F4F",
+                           ),
+                       } | PATH_BUTTON_OPTIONS
 
 
 def select_window(winfo: WindowInfo):
@@ -53,7 +53,12 @@ def select_window(winfo: WindowInfo):
         winfo.name,
         path_buttons,
         title_buttons
-    ), finalize=True)
+    ),
+                       finalize=True,
+                       element_padding=(12, 12),
+                       disable_minimize=True
+                       )
+    window.bring_to_front()
     gui_utils.deny_maximize(window)
     gui_utils.deny_minimize(window)
     context = {}
@@ -96,35 +101,66 @@ def get_key_by_state(button_switch: ButtonSwitchController, key: str):
 def build_view(title: str, path: str, name: str,
                path_buttons, title_buttons):
     name = name.removesuffix(".exe").title()
-    pad = h_pad, v_pad = 12, 12
+    label_options = dict(
+        auto_size_text=False,
+        size=(5, 1)
+    )
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
-        pad=pad,
         auto_size_button=False
     )
     return gui_utils.create_layout(
         WINDOW_TITLE,
-        [sg.Text("Here you can choose app, windows of which will cause inversion",
-                 pad=((96, 0), v_pad))],
         [
-            sg.Text("Name", tooltip="Name for inversion rule"),
-            sg.InputText(default_text=name, key=ID.INPUT_NAME,
-                         **gui_utils.INPUT_DEFAULTS, pad=pad, ),
+            gui_utils.center(sg.Text(
+                "Here you can choose app, "
+                "windows of which will cause inversion"
+            ))
         ],
         [
-            sg.Text("Path ", tooltip="Path to program"),
-            sg.InputText(default_text=path, key=ID.INPUT_PATH,
-                         **gui_utils.INPUT_DEFAULTS,
-                         pad=((20, h_pad), v_pad)),
+            sg.Text(
+                "Name",
+                tooltip="Name for inversion rule",
+                **label_options
+            ),
+            sg.InputText(
+                default_text=name,
+                key=ID.INPUT_NAME,
+                **gui_utils.INPUT_DEFAULTS
+            ),
+        ],
+        [
+            sg.Text(
+                "Path",
+                tooltip="Path to program",
+                **label_options
+            ),
+            sg.InputText(
+                default_text=path,
+                key=ID.INPUT_PATH,
+                **gui_utils.INPUT_DEFAULTS
+            ),
             path_buttons.get_button(common_switcher_options)
         ],
         [
-            sg.Text("Title", tooltip="Text in upper left corner of each program"),
-            sg.InputText(default_text=title, key=ID.INPUT_TITLE,
-                         **gui_utils.INPUT_DEFAULTS,
-                         pad=((32, h_pad), v_pad)),
+            sg.Text(
+                "Title",
+                tooltip="Text in upper left corner of each program",
+                **label_options
+            ),
+            sg.InputText(
+                default_text=title,
+                key=ID.INPUT_TITLE,
+                disabled=True,
+                **gui_utils.INPUT_DEFAULTS
+            ),
             title_buttons.get_button(common_switcher_options)
         ],
-        [sg.Button("OK", key=ID.SUBMIT, **gui_utils.BUTTON_DEFAULTS,
-                   auto_size_button=False,
-                   pad=((350, 0), v_pad))]
+        [
+            gui_utils.center(sg.Button(
+                "OK",
+                key=ID.SUBMIT,
+                auto_size_button=False,
+                **gui_utils.BUTTON_DEFAULTS
+            )),
+        ]
     )

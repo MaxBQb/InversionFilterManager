@@ -1,4 +1,4 @@
-from PySimpleGUI import theme, Titlebar, TITLEBAR_MAXIMIZE_KEY, TITLEBAR_MINIMIZE_KEY
+import PySimpleGUI as sg
 from _meta import __product_name__ as app_name
 
 
@@ -13,7 +13,7 @@ INPUT_DEFAULTS = dict(
 
 
 def init_theme():
-    theme("DarkGray13")
+    sg.theme("DarkGray13")
 
 
 def get_title(title: str):
@@ -22,7 +22,7 @@ def get_title(title: str):
 
 def create_layout(title: str, *rows):
     return [
-        [Titlebar(title=title)],
+        [sg.Titlebar(title=title)],
         *rows
     ]
 
@@ -35,15 +35,21 @@ def deny_maximize(window):
     '''
     Apply on custom titlebar only
     '''
-    hide(window, TITLEBAR_MAXIMIZE_KEY)
+    hide(window, sg.TITLEBAR_MAXIMIZE_KEY)
 
 
 def deny_minimize(window):
     '''
     Apply on custom titlebar only
     '''
-    hide(window, TITLEBAR_MINIMIZE_KEY)
+    hide(window, sg.TITLEBAR_MINIMIZE_KEY)
 
 
 def join_id(*ids: str):
     return '-'.join(ids)
+
+
+def center(element):
+    return sg.Column([[element]],
+                     pad=(0, 0),
+                     justification='center')
