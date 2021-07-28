@@ -115,8 +115,10 @@ def build_view(pages: PageSwitchController):
     return gui_utils.create_layout(
         WINDOW_TITLE,
         [sg.Text("List of rules associated with this window:")],
-        [pages.get_page_holder()],
-        [*pages.get_controls(gui_utils.BUTTON_DEFAULTS)],
+        [pages.get_pages_holder()],
+        [*pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
+            disabled_button_color="#21242c"
+        ))],
         [sg.Button("OK", key=ID.SUBMIT,
                    **common_switcher_options)]
     )

@@ -10,10 +10,13 @@ class PageSwitchController:
         PAGE_NEXT: str
         PAGE_PREVIOUS: str
 
-    def __init__(self, pages: list, key: str):
+    def __init__(self,
+                 pages: list,
+                 key: str,
+                 page_format: str = None):
         self.pages = pages
         self.max_page = len(pages)
-        self.last_page = self.max_page-1
+        self.last_page = self.max_page - 1
         self.key = key
         self.keys = [
             self.get_specific_key(str(i))
@@ -21,19 +24,23 @@ class PageSwitchController:
         ]
         self.current_page = 0
         self.selected = self.keys[self.current_page]
+        self.page_format = page_format or "{} / {}"
+        self._max_pages_text_len = len(self.page_format.format(
+            *(self.max_page,) * 2
+        )) + 2
 
         self.id = field_names_to_values(
             self.get_specific_key("{}")
         )(self.InnerID)()
 
-        self.controls_sym = {
-            self.id.PAGE_SET_FIRST: ('<<', (0, False)),
-            self.id.PAGE_PREVIOUS: ('<', (-1, True)),
-            self.id.PAGE_NEXT: ('>', (1, True)),
-            self.id.PAGE_SET_LAST: ('>>', (self.last_page, False)),
+        self._controls_sym = {
+            self.id.PAGE_SET_FIRST: ('<<', 0),
+            self.id.PAGE_PREVIOUS: ('<', -1),
+            self.id.PAGE_NEXT: ('>', 1),
+            self.id.PAGE_SET_LAST: ('>>', self.last_page),
         }
 
-    def get_page_holder(self, common_options={}):
+    def get_pages_holder(self, common_options={}):
         return Column([[
             Frame(**(self.get_page_options(i)
                      | common_options))
@@ -43,22 +50,22 @@ class PageSwitchController:
     def get_controls(self, common_options={}):
         if self.max_page == 1:
             return []
-        shown = [k for k, v in self._get_controls_visibility() if v]
+        disabled = {k for k, v in self._get_controls_disabled_states() if v}
         controls: list = [
             Column([[
                 Button(**(dict(
                     button_text=symbol,
                     key=control_key,
-                    visible=control_key in shown
+                    disabled=control_key in disabled
                 ) | common_options))
             ]], pad=(0, 0))
-            for control_key, (symbol, (_, relative)) in self.controls_sym.items()
+            for control_key, (symbol, _) in self._controls_sym.items()
         ]
-        controls.insert(2, Column([[
-                Text(self.get_page_text(),
-                     key=self.id.PAGE_NUMBER)
-            ]], pad=(12, 0))
-        )
+        controls.insert(len(controls) // 2, Column([[
+            Text(self.get_page_text(),
+                 font=("Consolas", 10),
+                 key=self.id.PAGE_NUMBER)
+        ]], pad=(12, 0)))
         return controls
 
     def get_page_options(self, page: int) -> dict:
@@ -76,8 +83,8 @@ class PageSwitchController:
     def is_selected(self, page: int):
         return self.current_page == page
 
-    def select_page(self, new_pos: int, relative: bool = False):
-        if relative:
+    def select_page(self, new_pos: int):
+        if new_pos not in (0, self.last_page):
             new_pos = self.get_next_pos(
                 self.current_page, self.max_page, new_pos
             )
@@ -92,34 +99,31 @@ class PageSwitchController:
         return new_pos
 
     def handle_event(self, event, window: Window):
-        new_page_args = self.controls_sym.get(event)
+        new_page_args = self._controls_sym.get(event)
         if new_page_args is None:
             return False
         window[self.selected].update(visible=False)
-        self.select_page(*new_page_args[1])
+        self.select_page(new_page_args[1])
         window[self.selected].update(visible=True)
         window[self.id.PAGE_NUMBER].update(
             self.get_page_text()
         )
-        for key, disable in self._get_controls_visibility():
-            window[key].update(visible=disable)
+        for key, disable in self._get_controls_disabled_states():
+            window[key].update(disabled=disable)
         return True
 
     def get_page_text(self):
-        max_page = str(self.max_page)
-        current_page = str(self.current_page + 1)
-        current_page = current_page.zfill(len(max_page))
-        return current_page + " / " + max_page
+        return self.page_format.format(
+            self.current_page + 1,
+            self.max_page
+        ).center(self._max_pages_text_len)
 
-    def _get_controls_visibility(self):
-        is_first_page = self.current_page != 0
-        is_last_page = self.current_page != self.last_page
-        need_relative_controls = self.max_page > 2
+    def _get_controls_disabled_states(self):
+        is_first_page = self.current_page == 0
+        is_last_page = self.current_page == self.last_page
         return (
-            (self.id.PAGE_PREVIOUS, is_first_page and need_relative_controls),
-            (self.id.PAGE_SET_FIRST, is_first_page),
-            (self.id.PAGE_NEXT, is_last_page and need_relative_controls),
-            (self.id.PAGE_SET_LAST, is_last_page)
+            (name, is_first_page if value < 1 else is_last_page)
+            for name, (_, value) in self._controls_sym.items()
         )
 
     @classmethod
