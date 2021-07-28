@@ -51,7 +51,7 @@ def select_rules(rules: list[str]):
                 ),
                 font=("Consolas", 10),
                 **gui_utils.BUTTON_DEFAULTS |
-                  dict(use_ttk_buttons=False),
+                dict(use_ttk_buttons=False),
                 auto_size_button=False,
                 pad=((h_pad*2, h_pad), v_pad)
             )
@@ -72,6 +72,7 @@ def select_rules(rules: list[str]):
     window = sg.Window(WINDOW_TITLE, build_view(
        pages
     ), finalize=True, element_justification='center')
+    window.bring_to_front()
     gui_utils.deny_maximize(window)
     gui_utils.deny_minimize(window)
     context = {}
