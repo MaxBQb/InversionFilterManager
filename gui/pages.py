@@ -1,5 +1,5 @@
 from PySimpleGUI import Frame, Button, Window, Text, Column
-from utils import field_names_to_values
+from utils import field_names_to_values, cycled_shift
 
 
 class PageSwitchController:
@@ -85,18 +85,13 @@ class PageSwitchController:
 
     def select_page(self, new_pos: int):
         if new_pos not in (0, self.last_page):
-            new_pos = self.get_next_pos(
-                self.current_page, self.max_page, new_pos
+            new_pos = cycled_shift(
+                self.current_page,
+                self.max_page,
+                new_pos
             )
         self.current_page = new_pos
         self.selected = self.keys[new_pos]
-
-    @staticmethod
-    def get_next_pos(pos: int, length: int, step=1):
-        new_pos = (pos + step) % length
-        if new_pos < 0:
-            new_pos += length
-        return new_pos
 
     def handle_event(self, event, window: Window):
         new_page_args = self._controls_sym.get(event)

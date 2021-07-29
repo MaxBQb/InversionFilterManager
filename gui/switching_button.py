@@ -1,7 +1,6 @@
 from PySimpleGUI import Button, Window, Column
-from utils import rename_key
+from utils import rename_key, cycled_shift
 from functools import cached_property
-from typing import Sequence
 
 
 class ButtonSwitchController:
@@ -34,20 +33,17 @@ class ButtonSwitchController:
         return button
 
     def select_next(self):
-        self.selected = self.get_next_cycled(
-            self.states, self.selected
-        )
-        return self.selected
-
-    @staticmethod
-    def get_next_cycled(array: Sequence, current):
-        return array[(array.index(current) + 1) % len(array)]
+        self.selected = self.states[cycled_shift(
+            self.states.index(self.selected),
+            len(self.states)
+        )]
 
     def handle_event(self, event, window: Window):
         if event != self.key:
             return False
         btn: Button = window[event]
-        options = self.options[self.select_next()]
+        self.select_next()
+        options = self.options[self.selected]
         tooltip = self._tooltips.get(self.selected)
         if tooltip is not None:
             btn.set_tooltip(tooltip)
