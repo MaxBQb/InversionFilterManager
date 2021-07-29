@@ -1,4 +1,4 @@
-from PySimpleGUI import Frame, Button, Window, Text, Column
+import PySimpleGUI as sg
 from utils import field_names_to_values, cycled_shift
 
 
@@ -41,8 +41,8 @@ class PageSwitchController:
         }
 
     def get_pages_holder(self, common_options={}):
-        return Column([[
-            Frame(**(self.get_page_options(i)
+        return sg.Column([[
+            sg.Frame(**(self.get_page_options(i)
                      | common_options))
             for i in range(self.max_page)
         ]], pad=(0, 0))
@@ -52,20 +52,19 @@ class PageSwitchController:
             return []
         disabled = {k for k, v in self._get_controls_disabled_states() if v}
         controls: list = [
-            Column([[
-                Button(**(dict(
-                    button_text=symbol,
-                    key=control_key,
-                    disabled=control_key in disabled
-                ) | common_options))
-            ]], pad=(0, 0))
+            sg.Button(**(dict(
+                button_text=symbol,
+                key=control_key,
+                disabled=control_key in disabled
+            ) | common_options))
             for control_key, (symbol, _) in self._controls_sym.items()
         ]
-        controls.insert(len(controls) // 2, Column([[
-            Text(self.get_page_text(),
-                 font=("Consolas", 10),
-                 key=self.id.PAGE_NUMBER)
-        ]], pad=(12, 0)))
+        controls.insert(len(controls) // 2, sg.Text(
+            self.get_page_text(),
+            font=("Consolas", 10),
+            key=self.id.PAGE_NUMBER,
+            pad=(12, 12)
+        ))
         return controls
 
     def get_page_options(self, page: int) -> dict:
@@ -93,7 +92,7 @@ class PageSwitchController:
         self.current_page = new_pos
         self.selected = self.keys[new_pos]
 
-    def handle_event(self, event, window: Window):
+    def handle_event(self, event, window: sg.Window):
         new_page_args = self._controls_sym.get(event)
         if new_page_args is None:
             return False

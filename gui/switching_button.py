@@ -1,4 +1,4 @@
-from PySimpleGUI import Button, Window, Column
+from PySimpleGUI import Button, Window
 from utils import rename_key, cycled_shift
 from functools import cached_property
 
