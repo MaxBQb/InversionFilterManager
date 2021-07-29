@@ -44,8 +44,20 @@ TITLE_BUTTON_OPTIONS = {
 
 
 def select_window(winfo: WindowInfo):
-    path_buttons = ButtonSwitchController(PATH_BUTTON_OPTIONS, ID.BUTTON_PATH)
-    title_buttons = ButtonSwitchController(TITLE_BUTTON_OPTIONS, ID.BUTTON_TITLE)
+    path_buttons = ButtonSwitchController(
+        PATH_BUTTON_OPTIONS,
+        ID.BUTTON_PATH,
+        gui_utils.BUTTON_DEFAULTS | dict(
+            auto_size_button=False
+        )
+    )
+    title_buttons = ButtonSwitchController(
+        TITLE_BUTTON_OPTIONS,
+        ID.BUTTON_TITLE,
+        gui_utils.BUTTON_DEFAULTS | dict(
+            auto_size_button=False
+        )
+    )
 
     window = sg.Window(WINDOW_TITLE, build_view(
         winfo.title,
@@ -69,7 +81,7 @@ def select_window(winfo: WindowInfo):
 
         if title_buttons.handle_event(event, window):
             window[ID.INPUT_TITLE].update(
-                disabled=title_buttons.is_selected(ButtonState.DISABLED)
+                disabled=title_buttons.selected == ButtonState.DISABLED
             )
 
         path_buttons.handle_event(event, window)
@@ -91,9 +103,9 @@ def select_window(winfo: WindowInfo):
 
 
 def get_key_by_state(button_switch: ButtonSwitchController, key: str):
-    if button_switch.is_selected(ButtonState.DISABLED):
+    if button_switch.selected == ButtonState.DISABLED:
         return
-    if button_switch.is_selected(ButtonState.REGEX):
+    if button_switch.selected == ButtonState.REGEX:
         key += '_regex'
     return key
 
@@ -104,9 +116,6 @@ def build_view(title: str, path: str, name: str,
     label_options = dict(
         auto_size_text=False,
         size=(5, 1)
-    )
-    common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
-        auto_size_button=False
     )
     return gui_utils.create_layout(
         WINDOW_TITLE,
@@ -139,7 +148,7 @@ def build_view(title: str, path: str, name: str,
                 key=ID.INPUT_PATH,
                 **gui_utils.INPUT_DEFAULTS
             ),
-            path_buttons.get_button(common_switcher_options)
+            path_buttons.button
         ],
         [
             sg.Text(
@@ -153,7 +162,7 @@ def build_view(title: str, path: str, name: str,
                 disabled=True,
                 **gui_utils.INPUT_DEFAULTS
             ),
-            title_buttons.get_button(common_switcher_options)
+            title_buttons.button
         ],
         [
             gui_utils.center(sg.Button(

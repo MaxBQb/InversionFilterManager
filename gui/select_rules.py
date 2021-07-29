@@ -59,12 +59,11 @@ def select_rules(rules: list[str]):
         actions.append(
             ButtonSwitchController(
                 BUTTON_OPTIONS,
-                gui_utils.join_id(ID.ACTION, str(i))
+                gui_utils.join_id(ID.ACTION, str(i)),
+                common_switcher_options
             )
         )
-        rule_buttons.append(actions[-1].get_button(
-            common_switcher_options
-        ))
+        rule_buttons.append(actions[-1].button)
 
     pages = PageSwitchController.from_list(
         rule_buttons)(key=ID.PAGES)
@@ -99,9 +98,9 @@ def select_rules(rules: list[str]):
 
 
 def get_key_by_state(button_switch: ButtonSwitchController, key: str):
-    if button_switch.is_selected(ButtonState.DISABLED):
+    if button_switch.selected == ButtonState.DISABLED:
         return
-    if button_switch.is_selected(ButtonState.REGEX):
+    if button_switch.selected == ButtonState.REGEX:
         key += '_regex'
     return key
 

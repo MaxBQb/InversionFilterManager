@@ -19,3 +19,18 @@ def ellipsis_trunc(text: str, width=12):
     if len(text) <= width or width < 1:
         return text
     return text[:width-1].rstrip() + "…"
+
+
+def rename_key(container: dict, old_key, new_key, override=True) -> bool:
+    if old_key not in container:
+        return False
+
+    if new_key in container and not override:
+        return False
+
+    value = container[old_key]
+    del container[old_key]
+    container[new_key] = value
+    return True
+
+
