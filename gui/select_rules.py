@@ -1,6 +1,5 @@
 import PySimpleGUI as sg
-from gui.switching_button import ButtonSwitchController
-from gui.pages import PageSwitchController
+from gui.custom_gui_elements import ButtonSwitchController, PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
 import gui.gui_utils as gui_utils
 from natsort import os_sorted

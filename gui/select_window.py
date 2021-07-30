@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 from active_window_checker import WindowInfo
-from gui.switching_button import ButtonSwitchController
+from gui.custom_gui_elements import ButtonSwitchController
 from utils import field_names_to_values
 import gui.gui_utils as gui_utils
 
