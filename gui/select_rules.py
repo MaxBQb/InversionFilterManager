@@ -73,7 +73,7 @@ def select_rules(rules: list[str]):
         rule_buttons)(key=ID.PAGES)
 
     window = sg.Window(WINDOW_TITLE, build_view(
-       pages, common_action.button
+       pages, common_action.button, len(rules) == 1
     ), finalize=True, element_justification='center')
     window.bring_to_front()
     gui_utils.deny_maximize(window)
@@ -126,7 +126,9 @@ def get_key_by_state(button_switch: ButtonSwitchController, key: str):
     return key
 
 
-def build_view(pages: PageSwitchController, common_state_button: sg.Button):
+def build_view(pages: PageSwitchController,
+               common_state_button: sg.Button,
+               single_rule: bool):
     pad = 12, 12
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
         pad=pad,
@@ -135,8 +137,9 @@ def build_view(pages: PageSwitchController, common_state_button: sg.Button):
 
     return gui_utils.create_layout(
         WINDOW_TITLE,
-        [sg.Text("List of rules associated with this window:")],
-        [sg.Text("Common state:"), common_state_button],
+        [sg.Text(("Rule" if single_rule else "List of rules") +
+                 " associated with this window:")],
+        [sg.Text("Common state:"), common_state_button] if not single_rule else [],
         [pages.get_pages_holder()],
         [*pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
             disabled_button_color="#21242c"
