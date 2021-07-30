@@ -139,7 +139,7 @@ def build_view(pages: PageSwitchController,
         WINDOW_TITLE,
         [sg.Text(("Rule" if single_rule else "List of rules") +
                  " associated with this window:")],
-        [sg.Text("Common state:"), common_state_button] if not single_rule else [],
+        [sg.Text("Common state:", pad=(0, 0)), common_state_button] if not single_rule else [],
         [pages.get_pages_holder()],
         [*pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
             disabled_button_color="#21242c"
