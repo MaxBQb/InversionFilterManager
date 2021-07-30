@@ -15,6 +15,7 @@ class ButtonState:
 @field_names_to_values("-{}-")
 class ID:
     ACTION: str
+    COMMON_ACTION: str
     PAGES: str
     SUBMIT: str
 
@@ -43,15 +44,18 @@ def select_rules(rules: list[str]):
         use_ttk_buttons=False,
         auto_size_button=False
     )
+    common_action = ButtonSwitchController(
+        BUTTON_OPTIONS,
+        ID.COMMON_ACTION,
+        common_switcher_options
+    )
     for i, name in enumerate(rules):
         rule_buttons.append(
             sg.Button(
                 ellipsis_trunc(name, width=10),
                 font=("Consolas", 10),
-                **gui_utils.BUTTON_DEFAULTS |
-                dict(use_ttk_buttons=False),
-                auto_size_button=False,
-                pad=((h_pad*2, h_pad), v_pad)
+                **(common_switcher_options |
+                   dict(pad=((h_pad*2, h_pad), v_pad)))
             )
         )
         actions.append(
@@ -69,7 +73,7 @@ def select_rules(rules: list[str]):
         rule_buttons)(key=ID.PAGES)
 
     window = sg.Window(WINDOW_TITLE, build_view(
-       pages
+       pages, common_action.button
     ), finalize=True, element_justification='center')
     window.bring_to_front()
     gui_utils.deny_maximize(window)
@@ -92,6 +96,15 @@ def select_rules(rules: list[str]):
                 else:
                     rules_to_remove.remove(name)
 
+        if common_action.handle_event(event, window):
+            for action in actions:
+                action.change_state(common_action.selected, window)
+
+            if common_action.selected == ButtonState.REMOVE:
+                rules_to_remove.update(rules)
+            else:
+                rules_to_remove.clear()
+
         if event == ID.SUBMIT:
             break
 
@@ -113,7 +126,7 @@ def get_key_by_state(button_switch: ButtonSwitchController, key: str):
     return key
 
 
-def build_view(pages: PageSwitchController):
+def build_view(pages: PageSwitchController, common_state_button: sg.Button):
     pad = 12, 12
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
         pad=pad,
@@ -123,6 +136,7 @@ def build_view(pages: PageSwitchController):
     return gui_utils.create_layout(
         WINDOW_TITLE,
         [sg.Text("List of rules associated with this window:")],
+        [sg.Text("Common state:"), common_state_button],
         [pages.get_pages_holder()],
         [*pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
             disabled_button_color="#21242c"

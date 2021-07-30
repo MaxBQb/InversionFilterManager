@@ -32,8 +32,8 @@ class ButtonSwitchController:
                 self._tooltips[state] = self.options[state].pop('tooltip')
         return button
 
-    def select_next(self):
-        self.selected = self.states[cycled_shift(
+    def get_next_state(self):
+        return self.states[cycled_shift(
             self.states.index(self.selected),
             len(self.states)
         )]
@@ -41,11 +41,14 @@ class ButtonSwitchController:
     def handle_event(self, event, window: Window):
         if event != self.key:
             return False
-        btn: Button = window[event]
-        self.select_next()
-        options = self.options[self.selected]
-        tooltip = self._tooltips.get(self.selected)
+        self.change_state(self.get_next_state(), window)
+        return True
+
+    def change_state(self, new_state: str, window: Window):
+        btn: Button = window[self.key]
+        options = self.options[new_state]
+        self.selected = new_state
+        tooltip = self._tooltips.get(new_state)
         if tooltip is not None:
             btn.set_tooltip(tooltip)
         btn.update(**options)
-        return True
