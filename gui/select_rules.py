@@ -3,6 +3,7 @@ from gui.switching_button import ButtonSwitchController
 from gui.pages import PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
 import gui.gui_utils as gui_utils
+from natsort import os_sorted
 
 
 @field_names_to_values
@@ -34,7 +35,7 @@ BUTTON_OPTIONS = {
 
 def select_rules(rules: list[str]):
     actions = []
-
+    rules = os_sorted(rules)
     rule_buttons = []
     pad = h_pad, v_pad = 6, 6
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
