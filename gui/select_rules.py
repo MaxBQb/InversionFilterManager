@@ -42,13 +42,10 @@ def select_rules(rules: list[str]):
         use_ttk_buttons=False,
         auto_size_button=False
     )
-    for i in range(303):
+    for i, name in enumerate(rules):
         rule_buttons.append(
             sg.Button(
-                ellipsis_trunc(
-                    f"MsPaint_{i + 1}",
-                    width=10
-                ),
+                ellipsis_trunc(name, width=10),
                 font=("Consolas", 10),
                 **gui_utils.BUTTON_DEFAULTS |
                 dict(use_ttk_buttons=False),
@@ -60,7 +57,9 @@ def select_rules(rules: list[str]):
             ButtonSwitchController(
                 BUTTON_OPTIONS,
                 gui_utils.join_id(ID.ACTION, str(i)),
-                common_switcher_options
+                common_switcher_options | dict(
+                    metadata=name
+                )
             )
         )
         rule_buttons.append(actions[-1].button)
@@ -74,7 +73,10 @@ def select_rules(rules: list[str]):
     window.bring_to_front()
     gui_utils.deny_maximize(window)
     gui_utils.deny_minimize(window)
-    context = {}
+    context = {
+        'remove': set()
+    }
+    rules_to_remove = context['remove']
 
     # Create an event loop
     while True:
@@ -82,13 +84,18 @@ def select_rules(rules: list[str]):
 
         pages.handle_event(event, window)
         for action in actions:
-            action.handle_event(event, window)
+            if action.handle_event(event, window):
+                name = window[event].metadata
+                if action.selected == ButtonState.REMOVE:
+                    rules_to_remove.add(name)
+                else:
+                    rules_to_remove.remove(name)
 
         if event == ID.SUBMIT:
-            # TODO
             break
 
         if event == sg.WIN_CLOSED:
+            context = None
             break
 
     window.close()
@@ -106,7 +113,7 @@ def get_key_by_state(button_switch: ButtonSwitchController, key: str):
 
 
 def build_view(pages: PageSwitchController):
-    pad = h_pad, v_pad = 12, 12
+    pad = 12, 12
     common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
         pad=pad,
         auto_size_button=False

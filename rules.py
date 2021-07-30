@@ -20,7 +20,7 @@ class RulesController:
         self.rules[name] = rule
         self.on_modified()
 
-    def remove_rules(self, names: list[str]):
+    def remove_rules(self, names: set[str]):
         if not names:
             return
 

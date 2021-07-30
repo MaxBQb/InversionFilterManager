@@ -111,24 +111,10 @@ class InteractionManager(AppElement):
             return
 
         rules = list(self.app.apps_rules.filter_rules(winfo))
-        select_rules(rules)
-        return
-        if not rules:
-            gui.alert("Something went wrong, none of the rules matches this window!\n"
-                      "But the last check says it does...\n"
-                      "Please inform author of the script about this occasion :(")
+        context = select_rules(rules)
+        if not context:
             return
-        elif len(rules) == 1:
-            if not self.confirm(f"One rule found: '{shorten(rules[0])}', remove it?"):
-                return
-        else:
-            if not self.confirm(f"Couple of rules found: [{shorten(', '.join(rules[:20]))}], remove them all?"):
-                if not self.confirm(f"Remove selected only?"):
-                    return
-
-                rules = [rule for rule in rules
-                         if self.confirm(f"Remove '{shorten(rule)}'?")]
-        self.app.apps_rules.remove_rules(rules)
+        self.app.apps_rules.remove_rules(context['remove'])
 
     @staticmethod
     def confirm(text) -> bool:
