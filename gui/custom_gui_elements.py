@@ -38,11 +38,8 @@ class ButtonSwitchController:
             len(self.states)
         )]
 
-    def handle_event(self, event, window: sg.Window):
-        if event != self.key:
-            return False
+    def event_handler(self, event: str, window: sg.Window, values):
         self.change_state(self.get_next_state(), window)
-        return True
 
     def change_state(self, new_state: str, window: sg.Window):
         btn: sg.Button = window[self.key]
