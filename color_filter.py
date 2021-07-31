@@ -13,4 +13,6 @@ def set_active(value):
 
 
 def toggle():
-    hotkey("ctrl+win+c")
+    hotkey("ctrl+win", do_release=False)
+    hotkey(46)
+    hotkey("ctrl+win", do_press=False)
