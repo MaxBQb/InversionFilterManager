@@ -46,8 +46,8 @@ def deny_minimize(window):
     hide(window, sg.TITLEBAR_MINIMIZE_KEY)
 
 
-def join_id(*ids: str):
-    return '-'.join(ids)
+def join_id(id_: str, *id_parts: str):
+    return id_ + '-'.join(id_parts) + '-'
 
 
 def center(element):
