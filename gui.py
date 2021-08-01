@@ -226,8 +226,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             [sg.Text("Common state:", pad=(0, 0)), self.common_action.button] if not single_rule else [],
             [self.pages.get_pages_holder()],
             [*self.pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
-                disabled_button_color="#21242c",
-                pad=(4, 4)
+                pad=pad
             ))]
         ]
 
@@ -278,7 +277,10 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                                window: sg.Window,
                                values):
         for action in self.actions:
-            action.change_state(self.common_action.selected, window)
+            action.change_state(
+                self.common_action.selected,
+                window
+            )
 
     def on_unhandled_event(self,
                            event: str,

@@ -6,6 +6,7 @@ from utils import field_names_to_values
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
     use_ttk_buttons=True,
+    disabled_button_color="#21242c"
 )
 
 INPUT_DEFAULTS = dict(
