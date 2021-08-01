@@ -70,11 +70,13 @@ class BaseInteractiveWindow:
     def __init__(self):
         self.window: sg.Window = None
         self.event_handlers: dict[str, list[BaseInteractiveWindow.HANDLER]] = {}
-        self.context = {}
         self.is_running = False
         self.layout: list[list] = None
 
-    def run(self) -> dict:
+    def run(self) -> Any:
+        """
+        Should be used to open window
+        """
         self.build_layout()
         self.add_title()
         self.add_submit_button()
@@ -82,7 +84,6 @@ class BaseInteractiveWindow:
         self.init_window()
         self.setup_window()
         self.dispatch_events()
-        return self.context
 
     def build_layout(self):
         self.layout = [[]]

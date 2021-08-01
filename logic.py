@@ -98,10 +98,10 @@ class InteractionManager(AppElement):
     def append_current_app(self):
         from gui import RuleCreationWindow
         winfo = self.app.state_controller.last_active_window
-        res = RuleCreationWindow(winfo).run()
-        if not res:
+        raw_rule, name = RuleCreationWindow(winfo).run()
+        if name is None or not raw_rule:
             return
-        self.app.apps_rules.add_rule(res.pop('name'), AppRule(**res))
+        self.app.apps_rules.add_rule(name, AppRule(**raw_rule))
         return
 
     def delete_current_app(self):
@@ -110,11 +110,12 @@ class InteractionManager(AppElement):
         if not self.app.apps_rules.check(winfo):
             return
 
-        rules = list(self.app.apps_rules.filter_rules(winfo))
-        context = RuleRemovingWindow(rules).run()
-        if not context:
+        rules = RuleRemovingWindow(list(
+            self.app.apps_rules.filter_rules(winfo)
+        )).run()
+        if not rules:
             return
-        self.app.apps_rules.remove_rules(context['remove'])
+        self.app.apps_rules.remove_rules(rules)
 
     @staticmethod
     def confirm(text) -> bool:

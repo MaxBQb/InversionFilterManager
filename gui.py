@@ -51,6 +51,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.winfo = winfo
         self.path_buttons: ButtonSwitchController = None
         self.title_buttons: ButtonSwitchController = None
+        self.name: str = None
+        self.raw_rule = {}
+
+    def run(self) -> tuple[dict, str]:
+        super().run()
+        return self.raw_rule, self.name
 
     def build_layout(self):
         name = self.winfo.name.removesuffix(".exe").title()
@@ -137,19 +143,19 @@ class RuleCreationWindow(BaseInteractiveWindow):
         )
 
     def on_submit(self, event: str, window: sg.Window, values):
-        self.context[self.get_key_by_state(self.path_buttons, 'path')] = values[self.id.INPUT_PATH]
-        title_key = self.get_key_by_state(self.title_buttons, 'title')
-        if title_key:
-            self.context[title_key] = values[self.id.INPUT_TITLE]
-        self.context['name'] = values[self.id.INPUT_NAME]
+        self.set_key_from_state(self.path_buttons.selected, 'path', values[self.id.INPUT_PATH])
+        self.set_key_from_state(self.title_buttons.selected, 'title', values[self.id.INPUT_TITLE])
+        self.name = values[self.id.INPUT_NAME]
         self.close()
 
-    def get_key_by_state(self, button_switch: ButtonSwitchController, key: str):
-        if button_switch.selected == self.button_states.DISABLED:
+    def set_key_from_state(self, button_state: ButtonState, key: str, value):
+        if button_state == self.button_states.DISABLED:
             return
-        if button_switch.selected == self.button_states.REGEX:
+
+        if button_state == self.button_states.REGEX:
             key += '_regex'
-        return key
+
+        self.raw_rule[key] = value
 
 
 class RuleRemovingWindow(BaseInteractiveWindow):
@@ -186,10 +192,11 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         self.actions: list[ButtonSwitchController] = []
         self.common_action: ButtonSwitchController = None
         self.pages: PageSwitchController = None
-        self.context = {
-            'remove': set()
-        }
-        self.rules_to_remove = self.context['remove']
+        self.rules_to_remove: set[str] = set()
+
+    def run(self) -> set[str]:
+        super().run()
+        return self.rules_to_remove
 
     def build_layout(self):
         pad = 6, 6
@@ -283,8 +290,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                   event: str,
                   window: sg.Window,
                   values):
-        for action in self.actions:
-            name = window[action.key].metadata
-            if action.selected == self.button_states.REMOVE:
-                self.rules_to_remove.add(name)
+        self.rules_to_remove = {
+            window[action.key].metadata
+            for action in self.actions
+            if action.selected == self.button_states.REMOVE
+        }
         self.close()
