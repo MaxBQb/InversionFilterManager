@@ -1,9 +1,9 @@
 import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
-import gui.gui_utils as gui_utils
-from gui.custom_gui_elements import ButtonSwitchController, PageSwitchController
+from custom_gui_elements import ButtonSwitchController, PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
+import gui_utils
 
 
 class RuleCreationWindow(gui_utils.BaseInteractiveWindow):

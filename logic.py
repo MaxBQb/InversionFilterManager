@@ -96,7 +96,7 @@ class InteractionManager(AppElement):
             add_hotkey(initial_hotkey+k, v)
 
     def append_current_app(self):
-        from gui.gui import RuleCreationWindow
+        from gui import RuleCreationWindow
         winfo = self.app.state_controller.last_active_window
         res = RuleCreationWindow(winfo).run()
         if not res:
@@ -105,7 +105,7 @@ class InteractionManager(AppElement):
         return
 
     def delete_current_app(self):
-        from gui.gui import RuleRemovingWindow
+        from gui import RuleRemovingWindow
         winfo = self.app.state_controller.last_active_window
         if not self.app.apps_rules.check(winfo):
             return
