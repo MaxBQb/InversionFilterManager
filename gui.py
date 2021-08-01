@@ -4,9 +4,10 @@ from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
 import gui_utils
+from gui_utils import BaseInteractiveWindow
 
 
-class RuleCreationWindow(gui_utils.BaseInteractiveWindow):
+class RuleCreationWindow(BaseInteractiveWindow):
     title = gui_utils.get_title("create rule")
 
     @field_names_to_values
@@ -16,7 +17,7 @@ class RuleCreationWindow(gui_utils.BaseInteractiveWindow):
         DISABLED: str
 
     @field_names_to_values("-{}-")
-    class ID:
+    class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
         BUTTON_PATH: str
         INPUT_TITLE: str
@@ -115,12 +116,6 @@ class RuleCreationWindow(gui_utils.BaseInteractiveWindow):
                 ),
                 self.title_buttons.button
             ],
-            [gui_utils.center(sg.Button(
-                "OK",
-                key=self.id.SUBMIT,
-                auto_size_button=False,
-                **gui_utils.BUTTON_DEFAULTS
-            ))]
         ]
 
     def set_handlers(self):
@@ -133,10 +128,6 @@ class RuleCreationWindow(gui_utils.BaseInteractiveWindow):
         self.add_event_handlers(
             self.path_buttons.key,
             self.path_buttons.event_handler
-        )
-        self.add_event_handlers(
-            self.id.SUBMIT,
-            self.on_submit
         )
 
     def disable_title(self, event: str, window: sg.Window, values):
@@ -161,7 +152,7 @@ class RuleCreationWindow(gui_utils.BaseInteractiveWindow):
         return key
 
 
-class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
+class RuleRemovingWindow(BaseInteractiveWindow):
     title = gui_utils.get_title("select rules")
 
     @field_names_to_values
@@ -170,11 +161,10 @@ class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
         REMOVE: str
 
     @field_names_to_values("-{}-")
-    class ID:
+    class ID(BaseInteractiveWindow.ID):
         ACTION: str
         COMMON_ACTION: str
         PAGES: str
-        SUBMIT: str
 
     id = ID()
     button_states = ButtonState()
@@ -222,10 +212,6 @@ class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
             )
         )(key=self.id.PAGES)
 
-        common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
-            pad=pad,
-            auto_size_button=False
-        )
         single_rule = len(self.rules) == 1
         self.layout = [
             [sg.Text(("Rule" if single_rule else "List of rules") +
@@ -235,9 +221,7 @@ class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
             [*self.pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
                 disabled_button_color="#21242c",
                 pad=(4, 4)
-            ))],
-            [sg.Button("OK", key=self.id.SUBMIT,
-                       **common_switcher_options)]
+            ))]
         ]
 
     def build_rule_selection_buttons(self, common_switcher_options) -> list[sg.Button]:
@@ -265,41 +249,22 @@ class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
         return rule_buttons
 
     def set_handlers(self):
+        super().set_handlers()
         for action in self.actions:
             self.add_event_handlers(
                 action.key,
-                self.get_on_action_click_handler(action)
+                action.event_handler
             )
         self.add_event_handlers(
             self.common_action.key,
             self.common_action.event_handler,
             self.on_common_action_click
         )
-        self.add_event_handlers(
-            self.id.SUBMIT,
-            self.make_handler(self.close)
-        )
-        self.add_event_handlers(
-            sg.WIN_CLOSED,
-            self.on_closed
-        )
 
     def init_window(self, **kwargs):
         super().init_window(
             element_justification='center'
         )
-
-    def get_on_action_click_handler(self, action: ButtonSwitchController):
-        def on_action_click(event: str,
-                            window: sg.Window,
-                            values):
-            action.event_handler(event, window, values)
-            name = window[event].metadata
-            if action.selected == self.button_states.REMOVE:
-                self.rules_to_remove.add(name)
-            else:
-                self.rules_to_remove.remove(name)
-        return on_action_click
 
     def on_common_action_click(self,
                                event: str,
@@ -308,20 +273,18 @@ class RuleRemovingWindow(gui_utils.BaseInteractiveWindow):
         for action in self.actions:
             action.change_state(self.common_action.selected, window)
 
-        if self.common_action.selected == self.button_states.REMOVE:
-            self.rules_to_remove.update(self.rules)
-        else:
-            self.rules_to_remove.clear()
-
     def on_unhandled_event(self,
                            event: str,
                            window: sg.Window,
                            values):
         self.pages.handle_event(event, window)
 
-    def on_closed(self,
+    def on_submit(self,
                   event: str,
                   window: sg.Window,
                   values):
-        self.context = None
+        for action in self.actions:
+            name = window[action.key].metadata
+            if action.selected == self.button_states.REMOVE:
+                self.rules_to_remove.add(name)
         self.close()

@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from typing import Callable, Any
 from _meta import __product_name__ as app_name
-
+from utils import field_names_to_values
 
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
@@ -61,6 +61,12 @@ class BaseInteractiveWindow:
 
     title = get_title("base window")
 
+    @field_names_to_values("-{}-")
+    class ID:
+        SUBMIT: str
+
+    id = ID()
+
     def __init__(self):
         self.window: sg.Window = None
         self.event_handlers: dict[str, list[BaseInteractiveWindow.HANDLER]] = {}
@@ -71,6 +77,7 @@ class BaseInteractiveWindow:
     def run(self) -> dict:
         self.build_layout()
         self.add_title()
+        self.add_submit_button()
         self.set_handlers()
         self.init_window()
         self.setup_window()
@@ -85,6 +92,16 @@ class BaseInteractiveWindow:
             title=self.title,
             **kwargs
         )])
+
+    def add_submit_button(self, **kwargs):
+        self.layout.append([center(sg.Button(
+            key=self.id.SUBMIT,
+            **(BUTTON_DEFAULTS | dict(
+                button_text="OK",
+                pad=(6, 6),
+                auto_size_button=False
+            ) | kwargs)
+        ))])
 
     def close(self):
         self.is_running = False
@@ -110,6 +127,10 @@ class BaseInteractiveWindow:
             sg.WIN_CLOSED,
             self.make_handler(self.close)
         )
+        self.add_event_handlers(
+            self.id.SUBMIT,
+            self.on_submit
+        )
 
     def run_event_loop(self):
         self.is_running = True
@@ -129,6 +150,9 @@ class BaseInteractiveWindow:
                            window: sg.Window,
                            values):
         pass
+
+    def on_submit(self, event: str, window: sg.Window, values):
+        self.close()
 
     def add_event_handlers(self, event: str, *handlers: HANDLER):
         if event not in self.event_handlers:
