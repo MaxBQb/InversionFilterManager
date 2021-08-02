@@ -22,10 +22,14 @@ def get_entry(rel_path, key):
 
 get_meta = partial(get_entry, './_meta.py')
 
+# py2exe says 'site' package unavailable for windows => useless
+# but somewhat I've got import error without next line
+py2exe.hooks.windows_excludes.remove("site")
+
 setup(console=['main.py'],
       name=get_meta('__product_name__'),
       version=get_meta('__version__'),
       author=get_meta('__author__'),
       description="Inverts colors when you opens blinding white windows",
-      data_files=[('.', ["config_description.ini", "update.bat"])]
+      data_files=[('.', ["config_description.ini", "update.bat"])],
       )
