@@ -3,11 +3,7 @@ import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task
 from apps_rules import AppsRulesController
-from textwrap import shorten
-from functools import partial
 from apps_rules import AppRule
-
-shorten = partial(shorten, width=60, placeholder="...")
 
 
 class App:
