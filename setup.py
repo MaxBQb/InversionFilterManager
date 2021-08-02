@@ -32,4 +32,8 @@ setup(console=['main.py'],
       author=get_meta('__author__'),
       description="Inverts colors when you opens blinding white windows",
       data_files=[('.', ["config_description.ini", "update.bat"])],
-      )
+      options=dict(
+          py2exe=dict(
+              optimize=2,
+          )
+      ))
