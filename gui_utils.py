@@ -12,8 +12,15 @@ BUTTON_DEFAULTS = dict(
 
 INPUT_DEFAULTS = dict(
     disabled_readonly_background_color="#222",
+    font=('Consolas', 12)
 )
 
+INPUT_EXTRA_DEFAULTS = dict(
+    insertwidth='4',
+    insertbackground='silver',
+    selectbackground='#175924',
+    selectforeground='silver',
+)
 
 def init_theme():
     sg.theme("DarkGray13")
@@ -91,7 +98,7 @@ class BaseNonBlockingWindow:
         self.add_title()
         self.add_submit_button()
         self.init_window()
-        self.setup_window()
+        self.dynamic_build()
 
     def build_layout(self):
         self.layout = [[]]
@@ -124,9 +131,13 @@ class BaseNonBlockingWindow:
             **(dict(
                 finalize=True,
                 element_padding=(12, 12),
-                keep_on_top=True
+                keep_on_top=True,
+                grab_anywhere=True,
             ) | kwargs)
         )
+
+    def dynamic_build(self):
+        self.setup_window()
 
     def setup_window(self):
         deny_maximize(self.window)
@@ -152,7 +163,7 @@ class BaseInteractiveWindow(BaseNonBlockingWindow):
         self.add_submit_button()
         self.set_handlers()
         self.init_window()
-        self.setup_window()
+        self.dynamic_build()
         self.dispatch_events()
 
     def add_submit_button(self, **kwargs):

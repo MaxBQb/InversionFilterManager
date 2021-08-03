@@ -126,6 +126,18 @@ class RuleCreationWindow(BaseInteractiveWindow):
             ],
         ]
 
+    def dynamic_build(self):
+        super().dynamic_build()
+        inputs = (
+            self.id.INPUT_TITLE,
+            self.id.INPUT_PATH,
+            self.id.INPUT_NAME
+        )
+        for input in inputs:
+            self.window[input].Widget.config(
+                **gui_utils.INPUT_EXTRA_DEFAULTS
+            )
+
     def set_handlers(self):
         super().set_handlers()
         self.add_event_handlers(
@@ -326,10 +338,17 @@ class RuleRemovingWindow(BaseInteractiveWindow):
 class RuleDescriptionWindow(BaseNonBlockingWindow):
     title = gui_utils.get_title("rule info")
 
+    @field_names_to_values("-{}-")
+    class ID(BaseNonBlockingWindow.ID):
+        INPUT: str
+
+    id = ID()
+
     def __init__(self, rule: AppRule, name: str):
         super().__init__()
         self.rule = rule
         self.name = name
+        self.inputs: list[str] = None
 
     def build_layout(self):
         description = dict(
@@ -339,19 +358,31 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
             if not k.startswith('_') and v
         }
         size = (len(max(description.keys(), key=len)), 1)
-        font = ('Consolas', 12)
+        font = gui_utils.INPUT_DEFAULTS['font']
+        self.inputs = [
+            gui_utils.join_id(self.id.INPUT, name)
+            for name in description
+        ]
         self.layout = [
             [sg.Text(
                 label.title() + ':',
                 auto_size_text=False,
                 font=font,
-                size=size
-            ),
+                size=size,
+             ),
              sg.InputText(
                  content,
                  readonly=True,
-                 font=font,
+                 key=input_key,
                  **gui_utils.INPUT_DEFAULTS
              )]
-            for label, content in description.items()
+            for (label, content), input_key in zip(description.items(), self.inputs)
         ]
+
+    def dynamic_build(self):
+        super().dynamic_build()
+        for input in self.inputs:
+            self.window[input].Widget.config(
+                **gui_utils.INPUT_EXTRA_DEFAULTS
+            )
+        self.inputs = None
