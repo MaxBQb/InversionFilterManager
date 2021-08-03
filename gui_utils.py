@@ -57,10 +57,8 @@ def center(element):
                      justification='center')
 
 
-class BaseInteractiveWindow:
-    HANDLER = Callable[[str, sg.Window, Any], None]
-
-    title = get_title("base window")
+class BaseNonBlockingWindow:
+    title = get_title("base non-blocking window")
 
     @field_names_to_values("-{}-")
     class ID:
@@ -70,21 +68,17 @@ class BaseInteractiveWindow:
 
     def __init__(self):
         self.window: sg.Window = None
-        self.event_handlers: dict[str, list[BaseInteractiveWindow.HANDLER]] = {}
-        self.is_running = False
         self.layout: list[list] = None
 
-    def run(self) -> Any:
+    def run(self):
         """
         Should be used to open window
         """
         self.build_layout()
         self.add_title()
         self.add_submit_button()
-        self.set_handlers()
         self.init_window()
         self.setup_window()
-        self.dispatch_events()
 
     def build_layout(self):
         self.layout = [[]]
@@ -101,12 +95,13 @@ class BaseInteractiveWindow:
             **(BUTTON_DEFAULTS | dict(
                 button_text="OK",
                 pad=(6, 6),
-                auto_size_button=False
+                auto_size_button=False,
+                button_type=sg.BUTTON_TYPE_CLOSES_WIN_ONLY
             ) | kwargs)
         ))])
 
     def close(self):
-        self.is_running = False
+        self.window.close()
 
     def init_window(self, **kwargs):
         self.window = sg.Window(
@@ -123,6 +118,37 @@ class BaseInteractiveWindow:
         self.window.bring_to_front()
         deny_maximize(self.window)
         deny_minimize(self.window)
+
+
+class BaseInteractiveWindow(BaseNonBlockingWindow):
+    HANDLER = Callable[[str, sg.Window, Any], None]
+
+    title = get_title("base window")
+
+    def __init__(self):
+        super().__init__()
+        self.event_handlers: dict[str, list[BaseInteractiveWindow.HANDLER]] = {}
+        self.is_running = False
+
+    def run(self) -> Any:
+        """
+        Should be used to open window
+        """
+        self.build_layout()
+        self.add_title()
+        self.add_submit_button()
+        self.set_handlers()
+        self.init_window()
+        self.setup_window()
+        self.dispatch_events()
+
+    def add_submit_button(self, **kwargs):
+        super().add_submit_button(
+            button_type=sg.BUTTON_TYPE_READ_FORM
+        )
+
+    def close(self):
+        self.is_running = False
 
     def set_handlers(self):
         self.add_event_handlers(
@@ -158,7 +184,7 @@ class BaseInteractiveWindow:
 
     def add_event_handlers(self, event: str, *handlers: HANDLER):
         if event not in self.event_handlers:
-            self.event_handlers[event] = handlers
+            self.event_handlers[event] = list(handlers)
         else:
             self.event_handlers[event] += handlers
 

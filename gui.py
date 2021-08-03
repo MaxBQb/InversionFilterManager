@@ -4,9 +4,10 @@ from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
 import gui_utils
-from gui_utils import BaseInteractiveWindow
+from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
 from apps_rules import AppsRulesController, AppRule
+from typing import Callable
 
 
 class RuleCreationWindow(BaseInteractiveWindow):
@@ -194,6 +195,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         super().__init__()
         self.rules = os_sorted(rules)
         self.description_button_keys: list[str] = []
+        self.before_close: list[Callable] = []
         self.actions: list[ButtonSwitchController] = []
         self.common_action: ButtonSwitchController = None
         self.pages: PageSwitchController = None
@@ -286,6 +288,11 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             element_justification='center'
         )
 
+    def close(self):
+        for action in self.before_close:
+            action()
+        super().close()
+
     def on_common_action_click(self,
                                event: str,
                                window: sg.Window,
@@ -307,7 +314,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                             window: sg.Window,
                             values):
         name = window[event].metadata
-        RuleDescriptionWindow(self.all_rules.rules[name], name).run()
+        description_window = RuleDescriptionWindow(self.all_rules.rules[name], name)
+        description_window.run()
+        self.before_close.append(description_window.close)
 
     def on_submit(self,
                   event: str,
@@ -321,16 +330,13 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         self.close()
 
 
-class RuleDescriptionWindow(BaseInteractiveWindow):
+class RuleDescriptionWindow(BaseNonBlockingWindow):
     title = gui_utils.get_title("rule info")
 
     def __init__(self, rule: AppRule, name: str):
         super().__init__()
         self.rule = rule
         self.name = name
-
-    def run(self) -> None:
-        super().run()
 
     def build_layout(self):
         description = dict(
