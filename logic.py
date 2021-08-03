@@ -2,20 +2,23 @@ import pyautogui as gui
 import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task
+from configobj import ConfigObj
 from apps_rules import AppsRulesController
 from apps_rules import AppRule
+import inject
 
 
 class App:
     def __init__(self):
         from realtime_data_sync import ConfigFileManager, RulesFileManager
         gui.FAILSAFE = False
-        self.state_controller = FilterStateController(self)
-        self.interaction_manager = InteractionManager(self)
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.apps_rules = AppsRulesController()
         self.apps_rules_file_manager = RulesFileManager("apps", self.apps_rules)
+        self.state_controller = FilterStateController()
+        self.interaction_manager = InteractionManager()
+        inject.configure(self.configure)
 
     def run(self):
         from active_window_checker import listen_switch_events
@@ -54,13 +57,20 @@ class App:
             print("You may do this manually, from", backup_filename)
             print("Files to copy:", copy_list)
 
+    def configure(self, binder: inject.Binder):
+        binder.bind(ConfigObj, self.config)
+        binder.bind(AppsRulesController, self.apps_rules)
+        binder.bind(FilterStateController, self.state_controller)
+        binder.bind(InteractionManager, self.interaction_manager)
 
-class AppElement:
-    def __init__(self, app: App):
-        self.app = app
 
+class FilterStateController:
+    config = inject.attr(ConfigObj)
+    rules = inject.attr(AppsRulesController)
 
-class FilterStateController(AppElement):
+    def __init__(self):
+        self.last_active_window = None
+
     def on_active_window_switched(self,
                                   hWinEventHook,
                                   event,
@@ -71,12 +81,15 @@ class FilterStateController(AppElement):
                                   dwmsEventTime):
         from active_window_checker import get_window_info, eventTypes
         winfo = self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
-        if self.app.config["display"]["show_events"]:
+        if self.config["display"]["show_events"]:
             print(winfo.path, eventTypes.get(event, hex(event)))
-        color_filter.set_active(self.app.apps_rules.check(winfo))
+        color_filter.set_active(self.rules.check(winfo))
 
 
-class InteractionManager(AppElement):
+class InteractionManager:
+    state_controller = inject.attr(FilterStateController)
+    rules = inject.attr(AppsRulesController)
+
     def setup(self):
         initial_hotkey = 'ctrl+alt+'
         special_hotkey = initial_hotkey + 'shift+'
@@ -93,25 +106,25 @@ class InteractionManager(AppElement):
 
     def append_current_app(self):
         from gui import RuleCreationWindow
-        winfo = self.app.state_controller.last_active_window
+        winfo = self.state_controller.last_active_window
         raw_rule, name = RuleCreationWindow(winfo).run()
         if name is None or not raw_rule:
             return
-        self.app.apps_rules.add_rule(name, AppRule(**raw_rule))
+        self.rules.add_rule(name, AppRule(**raw_rule))
         return
 
     def delete_current_app(self):
         from gui import RuleRemovingWindow
-        winfo = self.app.state_controller.last_active_window
-        if not self.app.apps_rules.check(winfo):
+        winfo = self.state_controller.last_active_window
+        if not self.rules.check(winfo):
             return
 
         rules = RuleRemovingWindow(list(
-            self.app.apps_rules.filter_rules(winfo)
+            self.rules.filter_rules(winfo)
         )).run()
         if not rules:
             return
-        self.app.apps_rules.remove_rules(rules)
+        self.rules.remove_rules(rules)
 
     @staticmethod
     def confirm(text) -> bool:
