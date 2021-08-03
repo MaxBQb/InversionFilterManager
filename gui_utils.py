@@ -124,12 +124,11 @@ class BaseNonBlockingWindow:
             **(dict(
                 finalize=True,
                 element_padding=(12, 12),
-                disable_minimize=True,
+                keep_on_top=True
             ) | kwargs)
         )
 
     def setup_window(self):
-        self.window.bring_to_front()
         deny_maximize(self.window)
         deny_minimize(self.window)
 
