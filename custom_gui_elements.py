@@ -104,7 +104,8 @@ class PageSwitchController:
             sg.Button(**(dict(
                 button_text=symbol,
                 key=control_key,
-                disabled=control_key in disabled
+                disabled=control_key in disabled,
+                use_ttk_buttons=True
             ) | common_options))
             for control_key, (symbol, _) in self._controls_sym.items()
         ]

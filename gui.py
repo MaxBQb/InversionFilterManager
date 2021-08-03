@@ -48,6 +48,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
         ),
     } | path_button_options
 
+    common_options = gui_utils.BUTTON_DEFAULTS | dict(
+        auto_size_button=False
+    )
+
     def __init__(self, winfo: WindowInfo):
         super().__init__()
         self.winfo = winfo
@@ -65,16 +69,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.path_buttons = ButtonSwitchController(
             self.path_button_options,
             self.id.BUTTON_PATH,
-            gui_utils.BUTTON_DEFAULTS | dict(
-                auto_size_button=False
-            )
+            self.common_options
         )
         self.title_buttons = ButtonSwitchController(
             self.title_button_options,
             self.id.BUTTON_TITLE,
-            gui_utils.BUTTON_DEFAULTS | dict(
-                auto_size_button=False
-            )
+            self.common_options
         )
         label_options = dict(
             auto_size_text=False,
@@ -220,8 +220,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
 
         common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
             pad=pad,
-            use_ttk_buttons=False,
-            auto_size_button=False
+            auto_size_button=False,
         )
 
         self.common_action = ButtonSwitchController(
