@@ -86,10 +86,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
             [
                 sg.Text(
                     "Name",
-                    tooltip="Name for inversion rule",
                     **label_options
                 ),
                 sg.InputText(
+                    tooltip="Name for inversion rule",
                     default_text=name,
                     key=self.id.INPUT_NAME,
                     **gui_utils.INPUT_DEFAULTS
@@ -98,10 +98,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
             [
                 sg.Text(
                     "Path",
-                    tooltip="Path to program",
                     **label_options
                 ),
                 sg.InputText(
+                    tooltip="Path to program",
                     default_text=self.winfo.path,
                     key=self.id.INPUT_PATH,
                     **gui_utils.INPUT_DEFAULTS
@@ -111,10 +111,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
             [
                 sg.Text(
                     "Title",
-                    tooltip="Text in upper left corner of each program",
                     **label_options
                 ),
                 sg.InputText(
+                    tooltip="Text in upper left corner of each program",
                     default_text=self.winfo.title,
                     key=self.id.INPUT_TITLE,
                     disabled=True,
