@@ -7,7 +7,6 @@ import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
 from apps_rules import AppsRulesController, AppRule
-from typing import Callable
 
 
 class RuleCreationWindow(BaseInteractiveWindow):
@@ -195,7 +194,6 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         super().__init__()
         self.rules = os_sorted(rules)
         self.description_button_keys: list[str] = []
-        self.before_close: list[Callable] = []
         self.actions: list[ButtonSwitchController] = []
         self.common_action: ButtonSwitchController = None
         self.pages: PageSwitchController = None
@@ -288,11 +286,6 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             element_justification='center'
         )
 
-    def close(self):
-        for action in self.before_close:
-            action()
-        super().close()
-
     def on_common_action_click(self,
                                event: str,
                                window: sg.Window,
@@ -314,9 +307,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                             window: sg.Window,
                             values):
         name = window[event].metadata
-        description_window = RuleDescriptionWindow(self.all_rules.rules[name], name)
-        description_window.run()
-        self.before_close.append(description_window.close)
+        self._open_dependent_window(
+            RuleDescriptionWindow(self.all_rules.rules[name], name)
+        )
 
     def on_submit(self,
                   event: str,

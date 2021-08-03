@@ -3,6 +3,7 @@ from typing import Callable, Any
 from _meta import __product_name__ as app_name
 from utils import field_names_to_values
 
+
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
     use_ttk_buttons=True,
@@ -69,6 +70,18 @@ class BaseNonBlockingWindow:
     def __init__(self):
         self.window: sg.Window = None
         self.layout: list[list] = None
+        self.dependent_windows = set()
+
+    def _add_dependency(self, dependent_window):
+        self.dependent_windows.add(dependent_window)
+
+    def _open_dependent_window(self, dependent_window):
+        self._add_dependency(dependent_window)
+        return dependent_window.run()
+
+    def _close_dependent(self):
+        for dependent in self.dependent_windows:
+            dependent.close()
 
     def run(self):
         """
@@ -101,6 +114,7 @@ class BaseNonBlockingWindow:
         ))])
 
     def close(self):
+        self._close_dependent()
         self.window.close()
 
     def init_window(self, **kwargs):
@@ -149,6 +163,7 @@ class BaseInteractiveWindow(BaseNonBlockingWindow):
 
     def close(self):
         self.is_running = False
+        self._close_dependent()
 
     def set_handlers(self):
         self.add_event_handlers(
