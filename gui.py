@@ -5,6 +5,8 @@ from custom_gui_elements import ButtonSwitchController, PageSwitchController
 from utils import field_names_to_values, ellipsis_trunc
 import gui_utils
 from gui_utils import BaseInteractiveWindow
+import inject
+from apps_rules import AppsRulesController, AppRule
 
 
 class RuleCreationWindow(BaseInteractiveWindow):
@@ -159,6 +161,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
 
 class RuleRemovingWindow(BaseInteractiveWindow):
+    all_rules = inject.attr(AppsRulesController)
     title = gui_utils.get_title("select rules")
 
     @field_names_to_values
@@ -169,6 +172,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
     @field_names_to_values("-{}-")
     class ID(BaseInteractiveWindow.ID):
         ACTION: str
+        DESCRIPTION: str
         COMMON_ACTION: str
         PAGES: str
 
@@ -189,6 +193,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
     def __init__(self, rules: list[str]):
         super().__init__()
         self.rules = os_sorted(rules)
+        self.description_button_keys: list[str] = []
         self.actions: list[ButtonSwitchController] = []
         self.common_action: ButtonSwitchController = None
         self.pages: PageSwitchController = None
@@ -234,12 +239,15 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         rule_buttons = []
         h_pad, v_pad = common_switcher_options['pad']
         for i, name in enumerate(self.rules):
+            self.description_button_keys.append(gui_utils.join_id(self.id.DESCRIPTION, str(i)))
             rule_buttons.append(
                 sg.Button(
                     ellipsis_trunc(name, width=10),
                     font=("Consolas", 10),
                     **(common_switcher_options |
-                       dict(pad=((h_pad * 2, h_pad), v_pad)))
+                       dict(pad=((h_pad * 2, h_pad), v_pad))),
+                    key=self.description_button_keys[-1],
+                    metadata=name
                 )
             )
             self.actions.append(
@@ -261,6 +269,12 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                 action.key,
                 action.event_handler
             )
+        for key in self.description_button_keys:
+            self.add_event_handlers(
+                key,
+                self.on_description_open
+            )
+        self.description_button_keys = None
         self.add_event_handlers(
             self.common_action.key,
             self.common_action.event_handler,
@@ -288,6 +302,13 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                            values):
         self.pages.handle_event(event, window)
 
+    def on_description_open(self,
+                            event: str,
+                            window: sg.Window,
+                            values):
+        name = window[event].metadata
+        RuleDescriptionWindow(self.all_rules.rules[name], name).run()
+
     def on_submit(self,
                   event: str,
                   window: sg.Window,
@@ -298,3 +319,40 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             if action.selected == self.button_states.REMOVE
         }
         self.close()
+
+
+class RuleDescriptionWindow(BaseInteractiveWindow):
+    title = gui_utils.get_title("rule info")
+
+    def __init__(self, rule: AppRule, name: str):
+        super().__init__()
+        self.rule = rule
+        self.name = name
+
+    def run(self) -> None:
+        super().run()
+
+    def build_layout(self):
+        description = dict(
+            name=self.name,
+        ) | {
+            k: v for k, v in vars(self.rule).items()
+            if not k.startswith('_') and v
+        }
+        size = (len(max(description.keys(), key=len)), 1)
+        font = ('Consolas', 12)
+        self.layout = [
+            [sg.Text(
+                label.title() + ':',
+                auto_size_text=False,
+                font=font,
+                size=size
+            ),
+             sg.InputText(
+                 content,
+                 readonly=True,
+                 font=font,
+                 **gui_utils.INPUT_DEFAULTS
+             )]
+            for label, content in description.items()
+        ]
