@@ -371,3 +371,62 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
                 **gui_utils.INPUT_EXTRA_DEFAULTS
             )
         self.inputs = None
+
+
+class UpdateRequestWindow(gui_utils.ConfirmationWindow):
+    title = gui_utils.get_title("new release is out!")
+
+    class ID(gui_utils.ConfirmationWindow.ID):
+        INPUT: str
+
+    def __init__(self, latest_version: str, file_size: int):
+        super().__init__("Do you want to install new release?")
+        self.latest_version = latest_version
+        self.file_size = file_size
+
+    def build_layout(self):
+        import _meta as app
+        from hurry.filesize import size, alternative
+
+        self.layout = [
+            [gui_utils.center(sg.Text('Update info', font=("Verdana", 18)))]
+        ]
+
+        description = dict(
+            app_name=app.__product_name__,
+            current_version=app.__version__,
+            latest_version=self.latest_version,
+            release_size=size(self.file_size, alternative),
+        )
+        label_size = (len(max(description.keys(), key=len))+1, 1)
+        input_size = (len(max(description.values(), key=len))+4, 1)
+        font = gui_utils.INPUT_DEFAULTS['font']
+        self.inputs = [
+            gui_utils.join_id(self.ID.INPUT, name)
+            for name in description
+        ]
+        self.layout += [
+            [sg.Text(
+                label.capitalize().replace('_', ' ') + ':',
+                auto_size_text=False,
+                font=font,
+                size=label_size,
+             ),
+             sg.InputText(
+                 content,
+                 readonly=True,
+                 key=input_key,
+                 size=input_size,
+                 **gui_utils.INPUT_DEFAULTS
+             )]
+            for (label, content), input_key in zip(description.items(), self.inputs)
+        ]
+        super().build_layout()
+
+    def dynamic_build(self):
+        super().dynamic_build()
+        for input in self.inputs:
+            self.window[input].Widget.config(
+                **gui_utils.INPUT_EXTRA_DEFAULTS
+            )
+        self.inputs = None

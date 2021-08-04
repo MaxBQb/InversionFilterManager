@@ -58,8 +58,8 @@ def join_id(id_: str, *id_parts: str):
     return id_ + '-'.join(id_parts) + '-'
 
 
-def center(element):
-    return sg.Column([[element]],
+def center(*elements):
+    return sg.Column([list(elements)],
                      pad=(0, 0),
                      justification='center')
 
@@ -76,7 +76,7 @@ class BaseNonBlockingWindow:
 
     def __init__(self):
         self.window: sg.Window = None
-        self.layout: list[list] = None
+        self.layout: list[list] = []
         self.dependent_windows = set()
 
     def _add_dependency(self, dependent_window):
@@ -216,3 +216,80 @@ class BaseInteractiveWindow(BaseNonBlockingWindow):
     @staticmethod
     def make_handler(func) -> HANDLER:
         return lambda e, w, v: func()
+
+
+class ConfirmationWindow(BaseInteractiveWindow):
+    title = get_title("confirm")
+
+    class ID(BaseInteractiveWindow.ID):
+        CANCEL: str
+
+    def __init__(self, question: str, default: bool = False):
+        super().__init__()
+        self.question = question
+        self.positive_answer = default
+
+    def build_layout(self):
+        self.layout.append([center(sg.Text(self.question))])
+
+    def run(self) -> bool:
+        super().run()
+        return self.positive_answer
+
+    def add_submit_button(self, yes_kwargs: dict = {}, no_kwargs: dict = {}, **common):
+        common_options = BUTTON_DEFAULTS | dict(
+            pad=(6, 6),
+            auto_size_button=False,
+            button_type=sg.BUTTON_TYPE_READ_FORM
+        ) | common
+
+        yes_kwargs = common_options | dict(
+            button_text="Yes",
+            button_color="#555"
+        ) | yes_kwargs
+
+        no_kwargs = common_options | dict(
+            button_text="No",
+            button_color="#333"
+        ) | no_kwargs
+
+        get_text = lambda d: d.get('button_text', '')
+        size = (len(max((
+            get_text(common_options),
+            get_text(no_kwargs),
+            get_text(yes_kwargs),
+        ), key=len)) + 2, 1)
+
+        self.layout.append([center(
+            sg.Button(
+                key=self.ID.SUBMIT,
+                size=size,
+                **yes_kwargs
+            ),
+            sg.Button(
+                key=self.ID.CANCEL,
+                size=size,
+                **no_kwargs
+            ),
+        )])
+
+    def set_handlers(self):
+        super().set_handlers()
+        self.add_event_handlers(
+            self.ID.CANCEL,
+            self.on_cancel
+        )
+
+    def on_submit(self,
+                  event: str,
+                  window: sg.Window,
+                  values):
+        self.positive_answer = True
+        self.close()
+
+    def on_cancel(self,
+                  event: str,
+                  window: sg.Window,
+                  values):
+        self.positive_answer = False
+        self.close()

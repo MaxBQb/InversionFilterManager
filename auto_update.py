@@ -46,11 +46,13 @@ async def check_for_updates(on_update_applied=None, confirm_required=True):
             return
 
         if confirm_required:
-            from logic import InteractionManager as im
-            from hurry.filesize import size, alternative
-            file_size = size(last_version_info.release_info.size, alternative)
-            if not im.confirm(f"{app.__product_name__} have new release {last_version_info.version_text}, "
-                              f"download update ({file_size})?"):
+            from gui import UpdateRequestWindow
+
+            if not UpdateRequestWindow(
+                last_version_info.version_text,
+                last_version_info.release_info.size,
+               ).run():
+                print("Update canceled")
                 return
 
         update(last_version_info.release_info, on_update_applied)
