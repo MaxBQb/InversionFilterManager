@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from typing import Callable, Any
 from _meta import __product_name__ as app_name
-from utils import field_names_to_values
+from utils import StrHolder
 
 
 BUTTON_DEFAULTS = dict(
@@ -67,11 +67,12 @@ def center(element):
 class BaseNonBlockingWindow:
     title = get_title("base non-blocking window")
 
-    @field_names_to_values("-{}-")
-    class ID:
-        SUBMIT: str
+    class ID(StrHolder):
+        @staticmethod
+        def _get_value(field_name: str) -> str:
+            return f"-{field_name}-"
 
-    id = ID()
+        SUBMIT: str
 
     def __init__(self):
         self.window: sg.Window = None
@@ -110,7 +111,7 @@ class BaseNonBlockingWindow:
 
     def add_submit_button(self, **kwargs):
         self.layout.append([center(sg.Button(
-            key=self.id.SUBMIT,
+            key=self.ID.SUBMIT,
             **(BUTTON_DEFAULTS | dict(
                 button_text="OK",
                 pad=(6, 6),
@@ -180,7 +181,7 @@ class BaseInteractiveWindow(BaseNonBlockingWindow):
             self.make_handler(self.close)
         )
         self.add_event_handlers(
-            self.id.SUBMIT,
+            self.ID.SUBMIT,
             self.on_submit
         )
 

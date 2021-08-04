@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 from functools import cached_property
-from utils import rename_key, cycled_shift, field_names_to_values
+from utils import rename_key, cycled_shift, StrHolder
 
 
 class ButtonSwitchController:
@@ -52,7 +52,7 @@ class ButtonSwitchController:
 
 
 class PageSwitchController:
-    class InnerID:
+    class InnerID(StrHolder):
         PAGE_NUMBER: str
         PAGE_SET_FIRST: str
         PAGE_SET_LAST: str
@@ -78,9 +78,7 @@ class PageSwitchController:
             *(self.max_page,) * 2
         )) + 2
 
-        self.id = field_names_to_values(
-            self.get_specific_key("{}")
-        )(self.InnerID)()
+        self.id = self.InnerID(lambda x: self.get_specific_key(x))
 
         self._controls_sym = {
             self.id.PAGE_SET_FIRST: ('<<', 0),

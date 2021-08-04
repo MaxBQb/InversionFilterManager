@@ -2,7 +2,7 @@ import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
-from utils import field_names_to_values, ellipsis_trunc
+from utils import StrHolder, ellipsis_trunc
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
@@ -12,23 +12,17 @@ from apps_rules import AppsRulesController, AppRule
 class RuleCreationWindow(BaseInteractiveWindow):
     title = gui_utils.get_title("create rule")
 
-    @field_names_to_values
-    class ButtonState:
+    class ButtonState(StrHolder):
         PLAIN: str
         REGEX: str
         DISABLED: str
 
-    @field_names_to_values("-{}-")
     class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
         BUTTON_PATH: str
         INPUT_TITLE: str
         INPUT_PATH: str
         INPUT_NAME: str
-        SUBMIT: str
-
-    id = ID()
-    button_states = ButtonState()
 
     path_button_options = {
         ButtonState.PLAIN: dict(
@@ -68,12 +62,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
         name = self.winfo.name.removesuffix(".exe").title()
         self.path_buttons = ButtonSwitchController(
             self.path_button_options,
-            self.id.BUTTON_PATH,
+            self.ID.BUTTON_PATH,
             self.common_options
         )
         self.title_buttons = ButtonSwitchController(
             self.title_button_options,
-            self.id.BUTTON_TITLE,
+            self.ID.BUTTON_TITLE,
             self.common_options
         )
         label_options = dict(
@@ -93,7 +87,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 sg.InputText(
                     tooltip="Name for inversion rule",
                     default_text=name,
-                    key=self.id.INPUT_NAME,
+                    key=self.ID.INPUT_NAME,
                     **gui_utils.INPUT_DEFAULTS
                 ),
             ],
@@ -105,7 +99,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 sg.InputText(
                     tooltip="Path to program",
                     default_text=self.winfo.path,
-                    key=self.id.INPUT_PATH,
+                    key=self.ID.INPUT_PATH,
                     **gui_utils.INPUT_DEFAULTS
                 ),
                 self.path_buttons.button
@@ -118,7 +112,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 sg.InputText(
                     tooltip="Text in upper left corner of each program",
                     default_text=self.winfo.title,
-                    key=self.id.INPUT_TITLE,
+                    key=self.ID.INPUT_TITLE,
                     disabled=True,
                     **gui_utils.INPUT_DEFAULTS
                 ),
@@ -129,9 +123,9 @@ class RuleCreationWindow(BaseInteractiveWindow):
     def dynamic_build(self):
         super().dynamic_build()
         inputs = (
-            self.id.INPUT_TITLE,
-            self.id.INPUT_PATH,
-            self.id.INPUT_NAME
+            self.ID.INPUT_TITLE,
+            self.ID.INPUT_PATH,
+            self.ID.INPUT_NAME
         )
         for input in inputs:
             self.window[input].Widget.config(
@@ -151,22 +145,22 @@ class RuleCreationWindow(BaseInteractiveWindow):
         )
 
     def disable_title(self, event: str, window: sg.Window, values):
-        window[self.id.INPUT_TITLE].update(
+        window[self.ID.INPUT_TITLE].update(
             disabled=self.title_buttons.selected ==
-                     self.button_states.DISABLED
+                     self.ButtonState.DISABLED
         )
 
     def on_submit(self, event: str, window: sg.Window, values):
-        self.set_key_from_state(self.path_buttons.selected, 'path', values[self.id.INPUT_PATH])
-        self.set_key_from_state(self.title_buttons.selected, 'title', values[self.id.INPUT_TITLE])
-        self.name = values[self.id.INPUT_NAME]
+        self.set_key_from_state(self.path_buttons.selected, 'path', values[self.ID.INPUT_PATH])
+        self.set_key_from_state(self.title_buttons.selected, 'title', values[self.ID.INPUT_TITLE])
+        self.name = values[self.ID.INPUT_NAME]
         self.close()
 
     def set_key_from_state(self, button_state: ButtonState, key: str, value):
-        if button_state == self.button_states.DISABLED:
+        if button_state == self.ButtonState.DISABLED:
             return
 
-        if button_state == self.button_states.REGEX:
+        if button_state == self.ButtonState.REGEX:
             key += '_regex'
 
         self.raw_rule[key] = value
@@ -176,20 +170,15 @@ class RuleRemovingWindow(BaseInteractiveWindow):
     all_rules = inject.attr(AppsRulesController)
     title = gui_utils.get_title("select rules")
 
-    @field_names_to_values
-    class ButtonState:
+    class ButtonState(StrHolder):
         SKIP: str
         REMOVE: str
 
-    @field_names_to_values("-{}-")
     class ID(BaseInteractiveWindow.ID):
         ACTION: str
         DESCRIPTION: str
         COMMON_ACTION: str
         PAGES: str
-
-    id = ID()
-    button_states = ButtonState()
 
     BUTTON_OPTIONS = {
         ButtonState.SKIP: dict(
@@ -225,7 +214,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
 
         self.common_action = ButtonSwitchController(
             self.BUTTON_OPTIONS,
-            self.id.COMMON_ACTION,
+            self.ID.COMMON_ACTION,
             common_switcher_options
         )
 
@@ -233,7 +222,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             self.build_rule_selection_buttons(
                 common_switcher_options
             )
-        )(key=self.id.PAGES)
+        )(key=self.ID.PAGES)
 
         single_rule = len(self.rules) == 1
         self.layout = [
@@ -250,7 +239,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         rule_buttons = []
         h_pad, v_pad = common_switcher_options['pad']
         for i, name in enumerate(self.rules):
-            self.description_button_keys.append(gui_utils.join_id(self.id.DESCRIPTION, str(i)))
+            self.description_button_keys.append(gui_utils.join_id(self.ID.DESCRIPTION, str(i)))
             rule_buttons.append(
                 sg.Button(
                     ellipsis_trunc(name, width=10),
@@ -264,7 +253,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             self.actions.append(
                 ButtonSwitchController(
                     self.BUTTON_OPTIONS,
-                    gui_utils.join_id(self.id.ACTION, str(i)),
+                    gui_utils.join_id(self.ID.ACTION, str(i)),
                     common_switcher_options | dict(
                         metadata=name
                     )
@@ -329,7 +318,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         self.rules_to_remove = {
             window[action.key].metadata
             for action in self.actions
-            if action.selected == self.button_states.REMOVE
+            if action.selected == self.ButtonState.REMOVE
         }
         self.close()
 
@@ -337,11 +326,8 @@ class RuleRemovingWindow(BaseInteractiveWindow):
 class RuleDescriptionWindow(BaseNonBlockingWindow):
     title = gui_utils.get_title("rule info")
 
-    @field_names_to_values("-{}-")
     class ID(BaseNonBlockingWindow.ID):
         INPUT: str
-
-    id = ID()
 
     def __init__(self, rule: AppRule, name: str):
         super().__init__()
@@ -359,7 +345,7 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
         size = (len(max(description.keys(), key=len)), 1)
         font = gui_utils.INPUT_DEFAULTS['font']
         self.inputs = [
-            gui_utils.join_id(self.id.INPUT, name)
+            gui_utils.join_id(self.ID.INPUT, name)
             for name in description
         ]
         self.layout = [
