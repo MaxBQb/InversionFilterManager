@@ -87,6 +87,10 @@ class PageSwitchController:
             self.id.PAGE_SET_LAST: ('>>', self.last_page),
         }
 
+        if self.max_page == 2:
+            del self._controls_sym[self.id.PAGE_PREVIOUS]
+            del self._controls_sym[self.id.PAGE_NEXT]
+
     def get_pages_holder(self, common_options={}):
         return sg.Column([[
             sg.Frame(**(self.get_page_options(i)
