@@ -92,16 +92,13 @@ class InteractionManager:
 
     def setup(self):
         initial_hotkey = 'ctrl+alt+'
-        special_hotkey = initial_hotkey + 'shift+'
+
         hotkeys = {
             'plus': self.append_current_app,
             'subtract': self.delete_current_app,
         }
 
-        from inspect import signature
         for k, v in hotkeys.items():
-            if signature(v).parameters:
-                add_hotkey(special_hotkey+k, v, args=(True,))
             add_hotkey(initial_hotkey+k, v)
 
     def append_current_app(self):
