@@ -1,4 +1,3 @@
-import pyautogui as gui
 import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task
@@ -11,7 +10,6 @@ import inject
 class App:
     def __init__(self):
         from realtime_data_sync import ConfigFileManager, RulesFileManager
-        gui.FAILSAFE = False
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.apps_rules = AppsRulesController()
@@ -122,14 +120,3 @@ class InteractionManager:
         if not rules:
             return
         self.rules.remove_rules(rules)
-
-    @staticmethod
-    def confirm(text) -> bool:
-        from pymsgbox import OK_TEXT
-        return OK_TEXT == gui.confirm(text)
-
-    @staticmethod
-    def prompt(text, default=""):
-        result = gui.prompt(text=text, default=default)
-        return result if result is not None else default
-
