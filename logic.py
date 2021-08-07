@@ -78,7 +78,9 @@ class FilterStateController:
                                   dwEventThread,
                                   dwmsEventTime):
         from active_window_checker import get_window_info, eventTypes
-        winfo = self.last_active_window = get_window_info(hwnd, idObject, dwEventThread)
+        if idObject != 0:
+            return
+        winfo = self.last_active_window = get_window_info(hwnd)
         if self.config["display"]["show_events"]:
             print(winfo.path, eventTypes.get(event, hex(event)))
         color_filter.set_active(self.rules.check(winfo))

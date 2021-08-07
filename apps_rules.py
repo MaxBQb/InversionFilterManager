@@ -10,6 +10,7 @@ class AppRule(Rule):
     path_regex: str = None
     title: str = None
     title_regex: str = None
+    use_root_title: bool = None
 
     _regex_suffix = '_regex'
 
@@ -19,7 +20,7 @@ class AppRule(Rule):
     def check(self, info: WindowInfo) -> bool:
         if not self._is_path_match(info.path):
             return False
-        return self._is_title_match(info.title)
+        return self._is_title_match(info.root_title if self.use_root_title else info.title)
 
     def _define_text_matchers(self):
         text_matcher_fields = [(field.removesuffix(self._regex_suffix), field)

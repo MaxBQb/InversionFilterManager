@@ -2,7 +2,7 @@ import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
-from utils import StrHolder, ellipsis_trunc
+from utils import StrHolder, ellipsis_trunc, max_len
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
@@ -12,35 +12,51 @@ from apps_rules import AppsRulesController, AppRule
 class RuleCreationWindow(BaseInteractiveWindow):
     title = gui_utils.get_title("create rule")
 
-    class ButtonState(StrHolder):
+    class TextState(StrHolder):
         PLAIN: str
         REGEX: str
         DISABLED: str
 
+    class RootState(StrHolder):
+        ROOT: str
+        CURRENT: str
+
     class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
+        BUTTON_USE_ROOT_TITLE: str
         BUTTON_PATH: str
         INPUT_TITLE: str
         INPUT_PATH: str
         INPUT_NAME: str
 
     path_button_options = {
-        ButtonState.PLAIN: dict(
+        TextState.PLAIN: dict(
             tooltip="Simply checks strings equality",
             button_color="#FF4500",
         ),
-        ButtonState.REGEX: dict(
+        TextState.REGEX: dict(
             tooltip="Use regex text matching (PRO)",
             button_color="#8B0000",
         ),
     }
 
     title_button_options = {
-        ButtonState.DISABLED: dict(
+        TextState.DISABLED: dict(
            tooltip="Skip matching of this field",
            button_color="#2F4F4F",
         ),
     } | path_button_options
+
+    title_root_button_options = {
+        RootState.CURRENT: dict(
+            tooltip="Use title from current window",
+            button_text="From CURRENT"
+        ),
+        RootState.ROOT: dict(
+            tooltip="Use title from main (root) window",
+            button_text="From ROOT"
+        ),
+    }
 
     common_options = gui_utils.BUTTON_DEFAULTS | dict(
         auto_size_button=False
@@ -49,8 +65,9 @@ class RuleCreationWindow(BaseInteractiveWindow):
     def __init__(self, winfo: WindowInfo):
         super().__init__()
         self.winfo = winfo
-        self.path_buttons: ButtonSwitchController = None
-        self.title_buttons: ButtonSwitchController = None
+        self.path_button: ButtonSwitchController = None
+        self.title_button: ButtonSwitchController = None
+        self.use_root_title_button: ButtonSwitchController = None
         self.name: str = None
         self.raw_rule = {}
 
@@ -58,16 +75,26 @@ class RuleCreationWindow(BaseInteractiveWindow):
         super().run()
         return self.raw_rule, self.name
 
+    def init_window(self, **kwargs):
+        super().init_window(element_padding=(6, 6))
+
     def build_layout(self):
         name = self.winfo.name.removesuffix(".exe").title()
-        self.path_buttons = ButtonSwitchController(
+        self.path_button = ButtonSwitchController(
             self.path_button_options,
             self.ID.BUTTON_PATH,
-            self.common_options
+            self.common_options,
+            False
         )
-        self.title_buttons = ButtonSwitchController(
+        self.title_button = ButtonSwitchController(
             self.title_button_options,
             self.ID.BUTTON_TITLE,
+            self.common_options,
+            False
+        )
+        self.use_root_title_button = ButtonSwitchController(
+            self.title_root_button_options,
+            self.ID.BUTTON_USE_ROOT_TITLE,
             self.common_options
         )
         label_options = dict(
@@ -102,7 +129,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     key=self.ID.INPUT_PATH,
                     **gui_utils.INPUT_DEFAULTS
                 ),
-                self.path_buttons.button
+                self.path_button.button
             ],
             [
                 sg.Text(
@@ -116,7 +143,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     disabled=True,
                     **gui_utils.INPUT_DEFAULTS
                 ),
-                self.title_buttons.button
+                self.title_button.button,
+                self.use_root_title_button.button,
             ],
         ]
 
@@ -135,32 +163,39 @@ class RuleCreationWindow(BaseInteractiveWindow):
     def set_handlers(self):
         super().set_handlers()
         self.add_event_handlers(
-            self.title_buttons.key,
-            self.title_buttons.event_handler,
+            self.title_button.key,
+            self.title_button.event_handler,
             self.disable_title
         )
         self.add_event_handlers(
-            self.path_buttons.key,
-            self.path_buttons.event_handler
+            self.path_button.key,
+            self.path_button.event_handler
+        )
+        self.add_event_handlers(
+            self.use_root_title_button.key,
+            self.use_root_title_button.event_handler
         )
 
     def disable_title(self, event: str, window: sg.Window, values):
         window[self.ID.INPUT_TITLE].update(
-            disabled=self.title_buttons.selected ==
-                     self.ButtonState.DISABLED
+            disabled=self.title_button.selected ==
+                     self.TextState.DISABLED
         )
 
     def on_submit(self, event: str, window: sg.Window, values):
-        self.set_key_from_state(self.path_buttons.selected, 'path', values[self.ID.INPUT_PATH])
-        self.set_key_from_state(self.title_buttons.selected, 'title', values[self.ID.INPUT_TITLE])
+        self.set_key_from_state(self.path_button.selected, 'path', values[self.ID.INPUT_PATH])
+        self.set_key_from_state(self.title_button.selected, 'title', values[self.ID.INPUT_TITLE])
+        if self.title_button.selected != self.TextState.DISABLED:
+            self.raw_rule['use_root'] = \
+                self.use_root_title_button.selected == self.RootState.ROOT
         self.name = values[self.ID.INPUT_NAME]
         self.close()
 
-    def set_key_from_state(self, button_state: ButtonState, key: str, value):
-        if button_state == self.ButtonState.DISABLED:
+    def set_key_from_state(self, button_state: TextState, key: str, value):
+        if button_state == self.TextState.DISABLED:
             return
 
-        if button_state == self.ButtonState.REGEX:
+        if button_state == self.TextState.REGEX:
             key += '_regex'
 
         self.raw_rule[key] = value
@@ -339,29 +374,30 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
         description = dict(
             name=self.name,
         ) | {
-            k: v for k, v in vars(self.rule).items()
+            k: str(v) for k, v in vars(self.rule).items()
             if not k.startswith('_') and v
         }
-        size = (len(max(description.keys(), key=len)), 1)
+        size = (max_len(description.keys()), 1)
         font = gui_utils.INPUT_DEFAULTS['font']
         self.inputs = [
             gui_utils.join_id(self.ID.INPUT, name)
             for name in description
         ]
-        self.layout = [
-            [sg.Text(
+        self.layout = [[
+            sg.Text(
                 label.capitalize().replace('_', ' ') + ':',
                 auto_size_text=False,
                 font=font,
                 size=size,
-             ),
-             sg.InputText(
-                 content,
-                 readonly=True,
-                 key=input_key,
-                 **gui_utils.INPUT_DEFAULTS
-             )]
-            for (label, content), input_key in zip(description.items(), self.inputs)
+            ),
+            sg.InputText(
+                content,
+                readonly=True,
+                key=input_key,
+                **gui_utils.INPUT_DEFAULTS
+            )
+            ] for (label, content), input_key
+              in zip(description.items(), self.inputs)
         ]
 
     def dynamic_build(self):
@@ -398,8 +434,8 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
             latest_version=self.latest_version,
             release_size=size(self.file_size, alternative),
         )
-        label_size = (len(max(description.keys(), key=len))+1, 1)
-        input_size = (len(max(description.values(), key=len))+4, 1)
+        label_size = (max_len(description.keys())+1, 1)
+        input_size = (max_len(description.values())+4, 1)
         font = gui_utils.INPUT_DEFAULTS['font']
         self.inputs = [
             gui_utils.join_id(self.ID.INPUT, name)

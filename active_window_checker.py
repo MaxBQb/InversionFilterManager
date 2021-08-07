@@ -6,12 +6,14 @@ but some of these APIs might not exist before Vista.
 Much credit to Eric Blade for this:
 https://mail.python.org/pipermail/python-win32/2009-July/009381.html
 and David Heffernan:
-http://stackoverflow.com/a/15898768/9585
+        http://stackoverflow.com/a/15898768/9585
 """
 
 # using pywin32 for constants and ctypes for everything else seems a little
 # indecisive, but whatevs.
 import win32con
+import win32gui
+import win32process
 from dataclasses import dataclass
 import sys
 import ctypes
@@ -58,73 +60,18 @@ class WindowInfo:
     hwnd: int
     title: str = ""
     path: str = ""
-    hwnd_alt: str = ""
     pid: int = None
+    root_title: str = ""
 
     @property
     def name(self) -> str:
         return self.path.split('\\')[-1]
 
 
-def log(msg):
-    print(msg)
-
-
-def logError(msg):
-    sys.stdout.write(msg + '\n')
-
-
-def getProcessID(dwEventThread, hwnd):
-    # It's possible to have a window we can get a PID out of when the thread
-    # isn't accessible, but it's also possible to get called with no window,
-    # so we have two approaches.
-
-    hThread = kernel32.OpenThread(threadFlag, 0, dwEventThread)
-
-    if hThread:
-        try:
-            processID = kernel32.GetProcessIdOfThread(hThread)
-            if not processID:
-                logError("Couldn't get process for thread %s: %s" %
-                         (hThread, ctypes.WinError()))
-        finally:
-            kernel32.CloseHandle(hThread)
-    else:
-        errors = ["No thread handle for %s: %s" %
-                  (dwEventThread, ctypes.WinError(),)]
-
-        if hwnd:
-            processID = ctypes.wintypes.DWORD()
-            threadID = user32.GetWindowThreadProcessId(
-                hwnd, ctypes.byref(processID))
-            if threadID != dwEventThread:
-                logError("Window thread != event thread? %s != %s" %
-                         (threadID, dwEventThread))
-            if processID:
-                processID = processID.value
-            else:
-                errors.append(
-                    "GetWindowThreadProcessID(%s) didn't work either: %s" % (
-                    hwnd, ctypes.WinError()))
-                processID = None
-        else:
-            processID = None
-
-        if not processID:
-            for err in errors:
-                logError(err)
-
-    return processID
-
-
-def getActiveWindow():
-    return user32.GetForegroundWindow()
-
-
 def getProcessFilename(processID):
     hProcess = kernel32.OpenProcess(processFlag, 0, processID)
     if not hProcess:
-        logError("OpenProcess(%s) failed: %s" % (processID, ctypes.WinError()))
+        print(f"OpenProcess({processID}) failed: {ctypes.WinError()}", file=sys.stderr)
         return None
 
     try:
@@ -138,24 +85,41 @@ def getProcessFilename(processID):
         kernel32.CloseHandle(hProcess)
 
 
-def get_window_info(hwnd, idObject, dwEventThread) -> WindowInfo:
-    winfo = WindowInfo(hwnd)
-
-    length = user32.GetWindowTextLengthW(hwnd)
-    title = ctypes.create_unicode_buffer(length + 1)
-    user32.GetWindowTextW(hwnd, title, length + 1)
-    winfo.title = title.value
-    winfo.pid = getProcessID(dwEventThread, hwnd)
+def get_window_info(hwnd) -> WindowInfo:
+    winfo = WindowInfo(
+        hwnd,
+        win32gui.GetWindowText(hwnd),
+        pid=win32process.GetWindowThreadProcessId(hwnd)[1]
+    )
 
     if winfo.pid:
         winfo.path = getProcessFilename(winfo.pid)
 
-    if hwnd:
-        winfo.hwnd_alt = hex(hwnd)
-    elif idObject == win32con.OBJID_CURSOR:
-        winfo.hwnd_alt = '<Cursor>'
-
+    root_hwnd = get_root(hwnd)
+    if root_hwnd != 0:
+        winfo.root_title = win32gui.GetWindowText(root_hwnd)
+        if not winfo.title:
+            winfo.title = winfo.root_title
     return winfo
+
+
+def get_root(hwnd: int):
+    active = (win32gui.GetForegroundWindow() or
+              win32gui.GetFocus())
+
+    if active and (hwnd == active or
+                   win32gui.IsChild(active, hwnd)):
+        return active
+
+    start = hwnd
+    last_hwnd = 0
+    try:
+        while hwnd != 0:
+            last_hwnd = hwnd
+            hwnd = win32gui.GetParent(hwnd)
+    except win32gui.error:
+        pass
+    return last_hwnd if start != last_hwnd else 0
 
 
 def setHook(WinEventProc, eventType):
