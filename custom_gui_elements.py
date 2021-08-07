@@ -1,21 +1,34 @@
 import PySimpleGUI as sg
 from functools import cached_property
-from utils import rename_key, cycled_shift, StrHolder
+from utils import rename_key, cycled_shift, StrHolder, max_len
 
 
 class ButtonSwitchController:
     def __init__(self,
                  options: dict[str, dict],
                  key: str,
-                 common_options: dict = {}):
+                 common_options: dict = {},
+                 common_size=True):
         self.states = tuple(options)
         self.options = dict(options)
-        self.common_options = common_options
+
         for state in self.states:
             # default param set + deepcopy
-            self.options[state] = {
-                'button_text': state
-            } | self.options[state]
+            self.options[state] = dict(
+                button_text=state,
+            ) | self.options[state]
+
+        if common_size:
+            size = (max_len(
+                value.get('button_text', '')
+                for value in self.options.values()
+            )+2, 1)
+            common_options = dict(
+                size=size,
+                auto_size_button=True,
+            ) | common_options
+
+        self.common_options = common_options
         self.key = key
         self._tooltips = {}
         self.selected = self.states[0]

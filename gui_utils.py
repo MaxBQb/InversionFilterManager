@@ -1,8 +1,7 @@
 import PySimpleGUI as sg
 from typing import Callable, Any
 from _meta import __product_name__ as app_name
-from utils import StrHolder
-
+from utils import StrHolder, max_len
 
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
@@ -20,6 +19,7 @@ INPUT_EXTRA_DEFAULTS = dict(
     selectbackground='#175924',
     selectforeground='silver',
 )
+
 
 def init_theme():
     sg.theme("DarkGray13")
@@ -254,11 +254,11 @@ class ConfirmationWindow(BaseInteractiveWindow):
         ) | no_kwargs
 
         get_text = lambda d: d.get('button_text', '')
-        size = (len(max((
+        size = (max_len(
             get_text(common_options),
             get_text(no_kwargs),
             get_text(yes_kwargs),
-        ), key=len)) + 2, 1)
+        ) + 2, 1)
 
         self.layout.append([center(
             sg.Button(

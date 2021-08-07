@@ -108,3 +108,8 @@ def rename_key(container: dict, old_key, new_key, override=True) -> bool:
 def cycled_shift(start_pos: int, length: int, step=1):
     end_pos = (start_pos + step) % length
     return end_pos if end_pos >= 0 else end_pos + length
+
+
+def max_len(iterable):
+    return len(max(iterable, key=len))
+
