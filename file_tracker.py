@@ -46,7 +46,7 @@ class LazyObserver(Observer):
         super().__init__(timeout)
         self._is_sleeping = False
         self._still_sleepy = False
-        self._last_awake = 0  # timestamp
+        self._awake_complete_time = 0  # timestamp
 
     def dispatch_events(self, *args, **kwargs):
         if self._is_sleeping:
@@ -77,7 +77,7 @@ class LazyObserver(Observer):
         if not self._is_sleeping:
             return
         self._is_sleeping = False
-        self._last_awake = time()
+        self._awake_complete_time = time() + self.timeout
 
     def _finish_awakening(self):
         self.event_queue.queue.clear()
@@ -87,4 +87,4 @@ class LazyObserver(Observer):
         return not self._is_sleeping and not self._still_sleepy
 
     def is_sleepy(self):
-        return time() - self._last_awake <= self.timeout
+        return time() <= self._awake_complete_time
