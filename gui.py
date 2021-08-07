@@ -2,7 +2,7 @@ import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
-from utils import StrHolder, ellipsis_trunc, max_len
+from utils import StrHolder, ellipsis_trunc, max_len, change_escape
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
@@ -31,11 +31,13 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
     path_button_options = {
         TextState.PLAIN: dict(
-            tooltip="Simply checks strings equality",
+            tooltip="Simply checks strings equality"
+                    "\nAutomatically unescape text",
             button_color="#FF4500",
         ),
         TextState.REGEX: dict(
-            tooltip="Use regex text matching (PRO)",
+            tooltip="Use regex text matching (PRO)"
+                    "\nAutomatically escape text",
             button_color="#8B0000",
         ),
     }
@@ -165,11 +167,19 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.add_event_handlers(
             self.title_button.key,
             self.title_button.event_handler,
-            self.disable_title
+            self.disable_title,
+            self.get_toggle_escape_handler(
+                self.title_button,
+                self.ID.INPUT_TITLE
+            )
         )
         self.add_event_handlers(
             self.path_button.key,
-            self.path_button.event_handler
+            self.path_button.event_handler,
+            self.get_toggle_escape_handler(
+                self.path_button,
+                self.ID.INPUT_PATH
+            )
         )
         self.add_event_handlers(
             self.use_root_title_button.key,
@@ -199,6 +209,18 @@ class RuleCreationWindow(BaseInteractiveWindow):
             key += '_regex'
 
         self.raw_rule[key] = value
+
+    def get_toggle_escape_handler(self,
+                                  switcher: ButtonSwitchController,
+                                  input_id: str):
+        def on_button_switched(event: str,
+                               window: sg.Window,
+                               values):
+            window[input_id].update(change_escape(
+                values[input_id],
+                switcher.selected == self.TextState.REGEX
+            ))
+        return on_button_switched
 
 
 class RuleRemovingWindow(BaseInteractiveWindow):

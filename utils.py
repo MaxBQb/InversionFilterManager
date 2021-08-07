@@ -1,3 +1,6 @@
+import re
+
+
 class MetaInitHook(type):
     """
     Run _cls_init classmethod each time
@@ -112,4 +115,10 @@ def cycled_shift(start_pos: int, length: int, step=1):
 
 def max_len(iterable):
     return len(max(iterable, key=len))
+
+
+def change_escape(text: str, escape: bool):
+    if escape:
+        return re.escape(text)
+    return re.sub(r'\\([^\\]+)', r'\g<1>', text)
 
