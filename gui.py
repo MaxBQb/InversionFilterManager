@@ -350,7 +350,7 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
         ]
         self.layout = [
             [sg.Text(
-                label.title() + ':',
+                label.capitalize().replace('_', ' ') + ':',
                 auto_size_text=False,
                 font=font,
                 size=size,
