@@ -23,7 +23,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install py2exe
-        
+
+    - name: Setup PyWin32
+      run: python "$env:pythonLocation/Scripts/pywin32_postinstall.py" -install
+
     - name: Convert python files to exe using py2exe
       run: python setup.py py2exe
       
