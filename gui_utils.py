@@ -270,11 +270,11 @@ class ConfirmationWindow(BaseInteractiveWindow):
         ) | no_kwargs
 
         get_text = lambda d: d.get('button_text', '')
-        size = (max_len(
+        size = (max_len((
             get_text(common_options),
             get_text(no_kwargs),
             get_text(yes_kwargs),
-        ) + 2, 1)
+        )) + 2, 1)
 
         self.layout.append([center(
             sg.Button(
