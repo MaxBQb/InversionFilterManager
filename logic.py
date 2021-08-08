@@ -104,10 +104,10 @@ class InteractionManager:
     def append_current_app(self):
         from gui import RuleCreationWindow
         winfo = self.state_controller.last_active_window
-        raw_rule, name = RuleCreationWindow(winfo).run()
-        if name is None or not raw_rule:
+        rule, name = RuleCreationWindow(winfo).run()
+        if name is None or not rule:
             return
-        self.rules.add_rule(name, AppRule(**raw_rule))
+        self.rules.add_rule(name, rule)
         return
 
     def delete_current_app(self):

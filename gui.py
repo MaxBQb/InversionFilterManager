@@ -76,12 +76,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.title_button: ButtonSwitchController = None
         self.use_root_title_button: ButtonSwitchController = None
         self.name: str = None
-        self.raw_rule = {}
+        self.rule: AppRule = None
         self.path_ref = [self.winfo.path]
 
-    def run(self) -> tuple[dict, str]:
+    def run(self) -> tuple[AppRule, str]:
         super().run()
-        return self.raw_rule, self.name
+        return self.rule, self.name
 
     def init_window(self, **kwargs):
         super().init_window(element_padding=(6, 6))
@@ -263,22 +263,21 @@ class RuleCreationWindow(BaseInteractiveWindow):
         )
 
     def on_submit(self, event: str, window: sg.Window, values):
-        self.set_key_from_state(self.path_button.selected, 'path', values[self.ID.INPUT_PATH])
-        self.set_key_from_state(self.title_button.selected, 'title', values[self.ID.INPUT_TITLE])
-        if self.title_button.selected != self.TextState.DISABLED:
-            self.raw_rule['use_root'] = \
-                self.use_root_title_button.selected == self.RootState.ROOT
+        def get_keys(button, key):
+            value = values[key]
+            return {
+                self.TextState.DISABLED: (None, None),
+                self.TextState.REGEX: (None, value),
+                self.TextState.PLAIN: (value, None),
+            }.get(button.selected)
+
+        self.rule = AppRule(
+            *get_keys(self.path_button, self.ID.INPUT_PATH),
+            *get_keys(self.title_button, self.ID.INPUT_TITLE),
+            self.use_root_title_button.selected == self.RootState.ROOT
+        )
         self.name = values[self.ID.INPUT_NAME]
         self.close()
-
-    def set_key_from_state(self, button_state: TextState, key: str, value):
-        if button_state == self.TextState.DISABLED:
-            return
-
-        if button_state == self.TextState.REGEX:
-            key += '_regex'
-
-        self.raw_rule[key] = value
 
     def get_toggle_escape_handler(self,
                                   switcher: ButtonSwitchController,
