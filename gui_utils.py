@@ -128,6 +128,7 @@ class BaseNonBlockingWindow:
             **(BUTTON_DEFAULTS | dict(
                 button_text="OK",
                 pad=(6, 6),
+                bind_return_key=True,
                 auto_size_button=False,
                 button_type=sg.BUTTON_TYPE_CLOSES_WIN_ONLY
             ) | kwargs)
@@ -258,12 +259,14 @@ class ConfirmationWindow(BaseInteractiveWindow):
 
         yes_kwargs = common_options | dict(
             button_text="Yes",
-            button_color="#555"
+            button_color="#555",
+            bind_return_key=self.positive_answer,
         ) | yes_kwargs
 
         no_kwargs = common_options | dict(
             button_text="No",
-            button_color="#333"
+            button_color="#333",
+            bind_return_key=not self.positive_answer,
         ) | no_kwargs
 
         get_text = lambda d: d.get('button_text', '')
