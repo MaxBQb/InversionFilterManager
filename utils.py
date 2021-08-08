@@ -122,3 +122,7 @@ def change_escape(text: str, escape: bool):
         return re.escape(text)
     return re.sub(r'\\([^\\]+)', r'\g<1>', text)
 
+
+def alternative_path(path: str):
+    from os.path import altsep, split
+    return altsep.join(split(path))

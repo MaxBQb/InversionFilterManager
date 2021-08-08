@@ -2,11 +2,12 @@ import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import ButtonSwitchController, PageSwitchController
-from utils import StrHolder, ellipsis_trunc, max_len, change_escape
+from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
 from apps_rules import AppsRulesController, AppRule
+from os.path import dirname
 
 
 class RuleCreationWindow(BaseInteractiveWindow):
@@ -76,6 +77,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.use_root_title_button: ButtonSwitchController = None
         self.name: str = None
         self.raw_rule = {}
+        self.path_ref = [self.winfo.path]
 
     def run(self) -> tuple[dict, str]:
         super().run()
@@ -149,6 +151,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     **gui_utils.ICON_BUTTON_DEFAULTS(),
                     button_type=sg.BUTTON_TYPE_BROWSE_FILE,
                     target=(sg.ThisRow, -1),
+                    initial_folder=alternative_path(dirname(self.winfo.path)),
                     key=self.ID.BUTTON_PATH_BROWSE,
                     **gui_utils.BUTTON_DEFAULTS
                 ),
@@ -191,13 +194,13 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.title_button,
             self.ID.LABEL_TITLE,
             self.ID.INPUT_TITLE,
-            self.winfo.title
+            [self.winfo.title]
         )
         path_label_clicked, path_button_clicked = self.get_regex_open_test_handlers(
             self.path_button,
             self.ID.LABEL_PATH,
             self.ID.INPUT_PATH,
-            self.winfo.path
+            self.path_ref
         )
         self.add_event_handlers(
             self.title_button.key,
@@ -248,7 +251,11 @@ class RuleCreationWindow(BaseInteractiveWindow):
         from os.path import normpath
         if self.path_button.selected == self.TextState.REGEX:
             self.path_button.event_handler(event, window, values)
-        path = normpath(values[self.ID.INPUT_PATH_BROWSED])
+        path = values[self.ID.INPUT_PATH_BROWSED]
+        window[self.ID.BUTTON_PATH_BROWSE].InitialFolder = \
+            alternative_path(dirname(path))
+        path = normpath(path)
+        self.path_ref[0] = path
         window[self.ID.INPUT_PATH].update(path)
         gui_utils.set_underline(
             window[self.ID.LABEL_PATH],
@@ -289,7 +296,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                                      switcher: ButtonSwitchController,
                                      label_id: str,
                                      input_id: str,
-                                     default_value: str):
+                                     default_value: list[str]):
         def on_text_clicked(event: str,
                             window: sg.Window,
                             values):
@@ -297,8 +304,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 return
             regex = values[input_id]
             current_value = change_escape(regex, False)
-            if current_value != default_value:
-                current_value += '\n' + default_value
+            if current_value != default_value[0]:
+                current_value += '\n' + default_value[0]
             test_regex(regex, current_value)
 
         def on_regex_selected(event: str,
