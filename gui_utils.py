@@ -45,6 +45,14 @@ def hide(window, key: str):
     window[key].update(visible=False)
 
 
+def set_underline(label: sg.Text, underline=True):
+    label.update(font=(
+        (*label.Font, 'underline')
+        if underline
+        else label.Font[:2]
+    ))
+
+
 def deny_maximize(window):
     '''
     Apply on custom titlebar only

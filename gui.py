@@ -26,6 +26,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
         BUTTON_USE_ROOT_TITLE: str
         BUTTON_PATH: str
         BUTTON_PATH_BROWSE: str
+        LABEL_TITLE: str
+        LABEL_PATH: str
         INPUT_TITLE: str
         INPUT_PATH: str
         INPUT_PATH_BROWSED: str
@@ -123,6 +125,9 @@ class RuleCreationWindow(BaseInteractiveWindow):
             [
                 sg.Text(
                     "Path",
+                    key=self.ID.LABEL_PATH,
+                    tooltip='Click to test this regex\n(only when regex selected)',
+                    enable_events=True,
                     **label_options
                 ),
                 sg.InputText(
@@ -151,6 +156,9 @@ class RuleCreationWindow(BaseInteractiveWindow):
             [
                 sg.Text(
                     "Title",
+                    key=self.ID.LABEL_TITLE,
+                    tooltip='Click to test this regex\n(only when regex selected)',
+                    enable_events=True,
                     **label_options
                 ),
                 sg.InputText(
@@ -179,6 +187,18 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
     def set_handlers(self):
         super().set_handlers()
+        title_label_clicked, title_button_clicked = self.get_regex_open_test_handlers(
+            self.title_button,
+            self.ID.LABEL_TITLE,
+            self.ID.INPUT_TITLE,
+            self.winfo.title
+        )
+        path_label_clicked, path_button_clicked = self.get_regex_open_test_handlers(
+            self.path_button,
+            self.ID.LABEL_PATH,
+            self.ID.INPUT_PATH,
+            self.winfo.path
+        )
         self.add_event_handlers(
             self.title_button.key,
             self.title_button.event_handler,
@@ -186,7 +206,16 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.get_toggle_escape_handler(
                 self.title_button,
                 self.ID.INPUT_TITLE
-            )
+            ),
+            title_button_clicked
+        )
+        self.add_event_handlers(
+            self.ID.LABEL_TITLE,
+            title_label_clicked
+        )
+        self.add_event_handlers(
+            self.ID.LABEL_PATH,
+            path_label_clicked
         )
         self.add_event_handlers(
             self.path_button.key,
@@ -194,7 +223,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.get_toggle_escape_handler(
                 self.path_button,
                 self.ID.INPUT_PATH
-            )
+            ),
+            path_button_clicked
         )
         self.add_event_handlers(
             self.use_root_title_button.key,
@@ -220,6 +250,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.path_button.event_handler(event, window, values)
         path = normpath(values[self.ID.INPUT_PATH_BROWSED])
         window[self.ID.INPUT_PATH].update(path)
+        gui_utils.set_underline(
+            window[self.ID.LABEL_PATH],
+            False
+        )
 
     def on_submit(self, event: str, window: sg.Window, values):
         self.set_key_from_state(self.path_button.selected, 'path', values[self.ID.INPUT_PATH])
@@ -250,6 +284,31 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 switcher.selected == self.TextState.REGEX
             ))
         return on_button_switched
+
+    def get_regex_open_test_handlers(self,
+                                     switcher: ButtonSwitchController,
+                                     label_id: str,
+                                     input_id: str,
+                                     default_value: str):
+        def on_text_clicked(event: str,
+                            window: sg.Window,
+                            values):
+            if switcher.selected != self.TextState.REGEX:
+                return
+            regex = values[input_id]
+            current_value = change_escape(regex, False)
+            if current_value != default_value:
+                current_value += '\n' + default_value
+            test_regex(regex, current_value)
+
+        def on_regex_selected(event: str,
+                              window: sg.Window,
+                              values):
+            gui_utils.set_underline(
+                window[label_id],
+                switcher.selected == self.TextState.REGEX
+            )
+        return on_text_clicked, on_regex_selected
 
 
 class RuleRemovingWindow(BaseInteractiveWindow):
@@ -485,8 +544,8 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
             latest_version=self.latest_version,
             release_size=size(self.file_size, alternative),
         )
-        label_size = (max_len(description.keys())+1, 1)
-        input_size = (max_len(description.values())+4, 1)
+        label_size = (max_len(description.keys()) + 1, 1)
+        input_size = (max_len(description.values()) + 4, 1)
         font = gui_utils.INPUT_DEFAULTS['font']
         self.inputs = [
             gui_utils.join_id(self.ID.INPUT, name)
@@ -517,3 +576,13 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
                 **gui_utils.INPUT_EXTRA_DEFAULTS
             )
         self.inputs = None
+
+
+def test_regex(regex: str, text: str):
+    from urllib.parse import urlencode
+    import webbrowser
+    webbrowser.open('https://regex101.com/?' + urlencode(dict(
+        flavor='python',
+        regex=regex,
+        testString=text
+    )))
