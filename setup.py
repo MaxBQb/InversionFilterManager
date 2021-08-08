@@ -3,6 +3,7 @@ import py2exe
 import codecs
 import os.path
 from functools import partial
+from glob import glob
 
 
 def read(rel_path):
@@ -31,7 +32,8 @@ setup(console=['main.py'],
       version=get_meta('__version__'),
       author=get_meta('__author__'),
       description="Inverts colors when you opens blinding white windows",
-      data_files=[('.', ["config_description.ini", "update.bat"])],
+      data_files=[('.', ["config_description.ini", "update.bat"]),
+                  ('./img', glob('img/*'))],
       options=dict(
           py2exe=dict(
               optimize=2,
