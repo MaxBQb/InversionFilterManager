@@ -1,7 +1,7 @@
+from re import compile
 from rules import *
 from dataclasses import dataclass
 from active_window_checker import WindowInfo
-from text_matcher import get_matcher
 
 
 @dataclass
@@ -12,35 +12,45 @@ class AppRule(Rule):
     title_regex: str = None
     use_root_title: bool = None
 
-    _regex_suffix = '_regex'
-
     def __post_init__(self):
-        self._define_text_matchers()
+        if self.path is not None:
+            self.path_regex = None
+        elif self.path_regex is None:
+            raise RuntimeError("Unable to create rule with no path condition")
+
+        self._check_title = True
+        if self.title is not None:
+            self.title_regex = None
+        elif self.title_regex is None:
+            self._check_title = False
+
+        self._title_regex = try_compile(self.title_regex)
+        self._path_regex = try_compile(self.path_regex)
 
     def check(self, info: WindowInfo) -> bool:
-        if not self._is_path_match(info.path):
-            return False
-        return self._is_title_match(info.root_title if self.use_root_title else info.title)
+        return self.check_path(info) and self.check_title(info)
 
-    def _define_text_matchers(self):
-        text_matcher_fields = [(field.removesuffix(self._regex_suffix), field)
-                               for field in vars(self)
-                               if field.endswith(self._regex_suffix)]
-        for field, field_regex in text_matcher_fields:
-            value_regex = getattr(self, field_regex)
-            self._set_text_matcher(field, get_matcher(
-               getattr(self, field) or value_regex,
-               value_regex is not None
-            ))
+    def check_path(self, info: WindowInfo):
+        return check_text(info.path, self.path, self._path_regex)
 
-    def _set_text_matcher_raw(self, field: str, value: str, is_regex: bool):
-        if is_regex:
-            field += self._regex_suffix
-        setattr(self, field, value)
-
-    def _set_text_matcher(self, field: str, matcher):
-        setattr(self, f'_is_{field}_match', matcher)
+    def check_title(self, info: WindowInfo):
+        if not self._check_title:
+            return True
+        title = info.root_title if self.use_root_title else info.title
+        return check_text(title, self.title, self._title_regex)
 
 
 class AppsRulesController(RulesController):
     RT = AppRule
+
+
+def try_compile(raw_regex: str):
+    if not raw_regex:
+        return
+    return compile(raw_regex)
+
+
+def check_text(text, plain, regex):
+    if regex:
+        return regex.fullmatch(text) is not None
+    return text == plain
