@@ -8,6 +8,11 @@ BUTTON_DEFAULTS = dict(
     disabled_button_color="#21242c",
 )
 
+ICON_BUTTON_DEFAULTS = lambda: dict(
+    button_color=(sg.theme_background_color(), sg.theme_background_color()),
+    border_width=0,
+)
+
 INPUT_DEFAULTS = dict(
     disabled_readonly_background_color="#222",
     font=('Consolas', 12)

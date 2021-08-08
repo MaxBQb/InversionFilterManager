@@ -7,8 +7,8 @@ class ButtonSwitchController:
     def __init__(self,
                  options: dict[str, dict],
                  key: str,
-                 common_options: dict = {},
-                 common_size=True):
+                 common_options={},
+                 common_size=False):
         self.states = tuple(options)
         self.options = dict(options)
 

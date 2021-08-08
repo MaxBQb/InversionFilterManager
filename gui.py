@@ -25,8 +25,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
         BUTTON_TITLE: str
         BUTTON_USE_ROOT_TITLE: str
         BUTTON_PATH: str
+        BUTTON_PATH_BROWSE: str
         INPUT_TITLE: str
         INPUT_PATH: str
+        INPUT_PATH_BROWSED: str
         INPUT_NAME: str
 
     path_button_options = {
@@ -52,11 +54,11 @@ class RuleCreationWindow(BaseInteractiveWindow):
     title_root_button_options = {
         RootState.CURRENT: dict(
             tooltip="Use title from current window",
-            button_text="From CURRENT"
+            button_text="CURRENT"
         ),
         RootState.ROOT: dict(
             tooltip="Use title from main (root) window",
-            button_text="From ROOT"
+            button_text="ROOT"
         ),
     }
 
@@ -85,14 +87,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.path_button = ButtonSwitchController(
             self.path_button_options,
             self.ID.BUTTON_PATH,
-            self.common_options,
-            False
+            self.common_options
         )
         self.title_button = ButtonSwitchController(
             self.title_button_options,
             self.ID.BUTTON_TITLE,
-            self.common_options,
-            False
+            self.common_options
         )
         self.use_root_title_button = ButtonSwitchController(
             self.title_root_button_options,
@@ -131,7 +131,22 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     key=self.ID.INPUT_PATH,
                     **gui_utils.INPUT_DEFAULTS
                 ),
-                self.path_button.button
+                self.path_button.button,
+                sg.InputText(
+                    key=self.ID.INPUT_PATH_BROWSED,
+                    enable_events=True,
+                    disabled=True,
+                    visible=False
+                ),
+                sg.Button(
+                    image_filename="./img/browse.png",
+                    tooltip="Browse path (will overwrite current path)",
+                    **gui_utils.ICON_BUTTON_DEFAULTS(),
+                    button_type=sg.BUTTON_TYPE_BROWSE_FILE,
+                    target=(sg.ThisRow, -1),
+                    key=self.ID.BUTTON_PATH_BROWSE,
+                    **gui_utils.BUTTON_DEFAULTS
+                ),
             ],
             [
                 sg.Text(
@@ -185,12 +200,26 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.use_root_title_button.key,
             self.use_root_title_button.event_handler
         )
+        self.add_event_handlers(
+            self.ID.INPUT_PATH_BROWSED,
+            self.on_browse_path
+        )
 
     def disable_title(self, event: str, window: sg.Window, values):
         window[self.ID.INPUT_TITLE].update(
             disabled=self.title_button.selected ==
                      self.TextState.DISABLED
         )
+
+    def on_browse_path(self,
+                       event: str,
+                       window: sg.Window,
+                       values):
+        from os.path import normpath
+        if self.path_button.selected == self.TextState.REGEX:
+            self.path_button.event_handler(event, window, values)
+        path = normpath(values[self.ID.INPUT_PATH_BROWSED])
+        window[self.ID.INPUT_PATH].update(path)
 
     def on_submit(self, event: str, window: sg.Window, values):
         self.set_key_from_state(self.path_button.selected, 'path', values[self.ID.INPUT_PATH])
