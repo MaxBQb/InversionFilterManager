@@ -6,7 +6,7 @@ from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
-from inversion_rules import InversionRule, InversionRulesController
+from inversion_rules import InversionRule, InversionRulesController, LookForTitle
 from os.path import dirname
 
 
@@ -20,7 +20,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
     class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
-        BUTTON_USE_ROOT_TITLE: str
+        BUTTON_LOOK_FOR_TITLE: str
         BUTTON_EXCLUSIVE_RULE: str
         BUTTON_PATH: str
         BUTTON_PATH_BROWSE: str
@@ -60,7 +60,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.winfo = winfo
         self.path_button: MultiStateButton = None
         self.title_button: MultiStateButton = None
-        self.use_root_title_button: Switcher = None
+        self.look_for_title_button: MultiStateButton = None
         self.exclusive_rule: Switcher = None
         self.name: str = None
         self.rule: InversionRule = None
@@ -85,16 +85,22 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.ID.BUTTON_TITLE,
             self.common_options
         )
-        self.use_root_title_button = Switcher(
-            dict(
-                tooltip="Use title from main (root) window",
-                button_text="ROOT"
-            ),
-            dict(
-                tooltip="Use title from current window",
-                button_text="CURRENT"
-            ),
-            self.ID.BUTTON_USE_ROOT_TITLE,
+        self.look_for_title_button = MultiStateButton({
+                LookForTitle.CURRENT: dict(
+                    tooltip="Use title from current window",
+                    button_text="CURRENT"
+                ),
+                LookForTitle.ROOT: dict(
+                    tooltip="Use title from main (root) window",
+                    button_text="ROOT"
+                ),
+                LookForTitle.ANY: dict(
+                    tooltip="Use any title from current "
+                            "to root window",
+                    button_text="ANY"
+                )
+            },
+            self.ID.BUTTON_LOOK_FOR_TITLE,
             self.common_options,
         )
         self.exclusive_rule = Switcher(
@@ -181,7 +187,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     **gui_utils.INPUT_DEFAULTS
                 ),
                 self.title_button.button,
-                self.use_root_title_button.button,
+                self.look_for_title_button.button,
             ],
         ]
 
@@ -239,8 +245,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
             path_button_clicked
         )
         self.add_event_handlers(
-            self.use_root_title_button.key,
-            self.use_root_title_button.event_handler
+            self.look_for_title_button.key,
+            self.look_for_title_button.event_handler
         )
         self.add_event_handlers(
             self.exclusive_rule.key,
@@ -287,7 +293,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.rule = InversionRule(
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
-            self.use_root_title_button.selected,
+            self.look_for_title_button.selected,
             self.exclusive_rule.selected
         )
         self.name = values[self.ID.INPUT_NAME]

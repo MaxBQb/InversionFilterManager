@@ -1,6 +1,13 @@
 from re import compile
 from dataclasses import dataclass
 from active_window_checker import WindowInfo
+from enum import Enum, auto
+
+
+class LookForTitle(Enum):
+    ANY = auto()
+    CURRENT = auto()
+    ROOT = auto()
 
 
 @dataclass
@@ -15,11 +22,10 @@ class InversionRule:
     path_regex: str = None
     title: str = None
     title_regex: str = None
-    use_root_title: bool = None
+    look_for_title: LookForTitle = None
     exclude: bool = None
 
     def __post_init__(self):
-        self.use_root_title = self.use_root_title or None
         self.exclude = self.exclude or None
 
         if self.path is not None:
@@ -32,7 +38,7 @@ class InversionRule:
             self.title_regex = None
         elif self.title_regex is None:
             self._check_title = False
-            self.use_root_title = None
+            self.look_for_title = None
 
         self._title_regex = try_compile(self.title_regex)
         self._path_regex = try_compile(self.path_regex)
@@ -46,7 +52,18 @@ class InversionRule:
     def check_title(self, info: WindowInfo):
         if not self._check_title:
             return True
-        title = info.root_title if self.use_root_title else info.title
+        if self.look_for_title == LookForTitle.ANY:
+            if self.title:
+                return self.title in info.titles
+
+            return any(
+                self._title_regex.fullmatch(title)
+                for title in info.titles
+            )
+
+        title = (info.root_title
+                 if self.look_for_title == LookForTitle.ROOT
+                 else info.title)
         return check_text(title, self.title, self._title_regex)
 
 
@@ -118,5 +135,5 @@ def try_compile(raw_regex: str):
 
 def check_text(text: str, plain: str, regex):
     if regex:
-        return regex.fullmatch(text) is not None
+        return bool(regex.fullmatch(text))
     return text == plain

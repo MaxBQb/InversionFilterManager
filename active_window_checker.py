@@ -14,6 +14,7 @@ and David Heffernan:
 import win32con
 import win32gui
 import win32process
+from functools import cached_property
 from dataclasses import dataclass
 import sys
 import ctypes
@@ -67,6 +68,12 @@ class WindowInfo:
     def name(self) -> str:
         return self.path.split('\\')[-1]
 
+    @cached_property
+    def titles(self):
+        return {*filter(
+            None, titles(parents(self.hwnd))
+        ), self.root_title}
+
 
 def getProcessFilename(processID):
     hProcess = kernel32.OpenProcess(processFlag, 0, processID)
@@ -113,11 +120,7 @@ def get_root(hwnd: int):
 
     start = hwnd
     last_hwnd = 0
-    try:
-        while hwnd != 0:
-            last_hwnd = hwnd
-            hwnd = win32gui.GetParent(hwnd)
-    except win32gui.error:
+    for last_hwnd in parents(hwnd):
         pass
     return last_hwnd if start != last_hwnd else 0
 
@@ -132,6 +135,24 @@ def setHook(WinEventProc, eventType):
         0,
         win32con.WINEVENT_OUTOFCONTEXT
     )
+
+
+def parents(hwnd):
+    if not hwnd:
+        return
+    try:
+        while True:
+            hwnd = win32gui.GetParent(hwnd)
+            if not hwnd:
+                break
+            yield hwnd
+    except win32gui.error:
+        pass
+
+
+def titles(iterable):
+    for hwnd in iterable:
+        yield win32gui.GetWindowText(hwnd)
 
 
 async def listen_switch_events(callback):
