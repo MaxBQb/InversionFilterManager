@@ -6,10 +6,9 @@ from active_window_checker import WindowInfo
 @dataclass
 class InversionRule:
     """
-    Specifies if current window requires to
-    toggle inversion color filter
-
-    'requirements' defines by user
+    Filter specific window/app
+    If information given matches with filters
+    then rule is active
     """
 
     path: str = None
@@ -17,7 +16,7 @@ class InversionRule:
     title: str = None
     title_regex: str = None
     use_root_title: bool = None
-    blacklisted = None
+    exclude = None
 
     def __post_init__(self):
         if self.path is not None:
@@ -34,7 +33,7 @@ class InversionRule:
         self._title_regex = try_compile(self.title_regex)
         self._path_regex = try_compile(self.path_regex)
 
-    def check(self, info: WindowInfo) -> bool:
+    def is_active(self, info: WindowInfo) -> bool:
         return self.check_path(info) and self.check_title(info)
 
     def check_path(self, info: WindowInfo):
@@ -47,21 +46,32 @@ class InversionRule:
         return check_text(title, self.title, self._title_regex)
 
 
-class InversionRulesController:
-    def __init__(self):
-        self.rules = dict()
-        self.whitelist = dict()
-        self.blacklist = dict()
+RULES = dict[str, InversionRule]
 
-    def load(self, rules: dict[str, InversionRule]):
+
+class InversionRulesController:
+    """
+    Determines when to use inversion color filter
+    Accumulates active rules
+    if no active rules found or
+    if there are some excluded active rules
+    Recommends to turn filter off, otherwise: on
+    """
+
+    def __init__(self):
+        self.rules: RULES = dict()
+        self.included: RULES = dict()
+        self.excluded: RULES = dict()
+
+    def load_rules(self, rules: RULES):
         self.rules = rules
-        self.whitelist, self.blacklist = dict(), dict()
+        self.included, self.excluded = dict(), dict()
         for name, rule in rules.items():
-            self.get_rules_section(rule.blacklisted)[name] = rule
+            self._detect_accessory(rule)[name] = rule
 
     def add_rule(self, name: str, rule: InversionRule):
         self.rules[name] = rule
-        self.get_rules_section(rule.blacklisted)[name] = rule
+        self._detect_accessory(rule)[name] = rule
         self.on_modified()
 
     def remove_rules(self, names: set[str]):
@@ -69,33 +79,31 @@ class InversionRulesController:
             return
 
         for name in names:
-            del self.get_rules_section(
-                self.rules[name].blacklisted
-            )[name]
+            del self._detect_accessory(self.rules[name])[name]
             del self.rules[name]
         self.on_modified()
 
     def on_modified(self):
         pass
 
-    def check(self, info: WindowInfo):
+    def is_inversion_required(self, info: WindowInfo):
         return (
-            self.check_rules(info, self.whitelist) and
-            not self.check_rules(info, self.blacklist)
+            self.has_active_rules(info, self.included) and
+            not self.has_active_rules(info, self.excluded)
         )
 
-    def check_rules(self, info: WindowInfo, rules: dict):
-        return next(self.filter_rules(info, rules), None) is not None
+    def has_active_rules(self, info: WindowInfo, rules: RULES):
+        return next(self.get_active_rules(info, rules), None) is not None
 
     @staticmethod
-    def filter_rules(info: WindowInfo, rules: dict):
+    def get_active_rules(info: WindowInfo, rules: RULES):
         return (name for name in rules
-                if rules[name].check(info))
+                if rules[name].is_active(info))
 
-    def get_rules_section(self, blacklist: bool):
-        if blacklist:
-            return self.blacklist
-        return self.whitelist
+    def _detect_accessory(self, rule: InversionRule):
+        if rule.exclude:
+            return self.excluded
+        return self.included
 
 
 def try_compile(raw_regex: str):
@@ -104,7 +112,7 @@ def try_compile(raw_regex: str):
     return compile(raw_regex)
 
 
-def check_text(text, plain, regex):
+def check_text(text: str, plain: str, regex):
     if regex:
         return regex.fullmatch(text) is not None
     return text == plain

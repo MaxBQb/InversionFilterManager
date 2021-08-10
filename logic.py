@@ -35,7 +35,7 @@ class App:
 
             copy_list = [
                 self.config.filename,
-                self.apps_rules_file_manager.filename
+                self.inversion_rules_file_manager.filename
             ]
 
             for filename in copy_list:
@@ -82,7 +82,7 @@ class FilterStateController:
         winfo = self.last_active_window = get_window_info(hwnd)
         if self.config["display"]["show_events"]:
             print(winfo.path, eventTypes.get(event, hex(event)))
-        color_filter.set_active(self.rules.check(winfo))
+        color_filter.set_active(self.rules.is_inversion_required(winfo))
 
 
 class InteractionManager:
@@ -106,18 +106,18 @@ class InteractionManager:
         rule, name = RuleCreationWindow(winfo).run()
         if name is None or not rule:
             return
-        self.rules.add_rule(name, rule)
+        self.rules_controller.add_rule(name, rule)
         return
 
     def delete_current_app(self):
         from gui import RuleRemovingWindow
         winfo = self.state_controller.last_active_window
-        if not self.rules.check(winfo):
+        if not self.rules_controller.is_inversion_required(winfo):
             return
 
         rules = RuleRemovingWindow(list(
-            self.rules.filter_rules(winfo, self.rules.rules)
+            self.rules_controller.get_active_rules(winfo, self.rules_controller.rules)
         )).run()
         if not rules:
             return
-        self.rules.remove_rules(rules)
+        self.rules_controller.remove_rules(rules)

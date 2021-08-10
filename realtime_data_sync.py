@@ -1,6 +1,6 @@
 from file_tracker import FileTracker
 from configobj import ConfigObj
-from inversion_rules import InversionRulesController, InversionRule
+from inversion_rules import InversionRulesController, InversionRule, RULES
 import jsons
 import yaml
 
@@ -61,7 +61,7 @@ class ConfigFileManager(FileTracker):
 
 class RulesFileManager(FileTracker):
     def __init__(self, name: str, rules_controller: InversionRulesController):
-        self.rules: dict[str, InversionRule] = None
+        self.rules: RULES = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
         super().__init__(name + "_rules.yaml")
@@ -95,7 +95,7 @@ class RulesFileManager(FileTracker):
                               f, yaml.CDumper)
 
     def on_file_loaded(self):
-        self.rules_controller.load(self.rules)
+        self.rules_controller.load_rules(self.rules)
 
     def on_file_reloaded(self):
         print(f"Changes for '{self.filename}' applied")
