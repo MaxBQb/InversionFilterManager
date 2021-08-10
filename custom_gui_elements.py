@@ -1,16 +1,19 @@
 import PySimpleGUI as sg
 from functools import cached_property
 from utils import rename_key, cycled_shift, StrHolder, max_len
+from typing import TypeVar, Generic, Any
+T = TypeVar('T')
+OPTIONS = dict[str, Any]
 
 
-class ButtonSwitchController:
+class ButtonSwitchController(Generic[T]):
     def __init__(self,
-                 options: dict[str, dict],
+                 options: dict[T, OPTIONS],
                  key: str,
-                 common_options={},
+                 common_options: OPTIONS = {},
                  common_size=False):
-        self.states = tuple(options)
-        self.options = dict(options)
+        self.states: tuple[T] = tuple(options)
+        self.options: dict[T, OPTIONS] = dict(options)
 
         for state in self.states:
             # default param set + deepcopy
@@ -28,9 +31,9 @@ class ButtonSwitchController:
                 auto_size_button=True,
             ) | common_options
 
-        self.common_options = common_options
+        self.common_options: OPTIONS = common_options
         self.key = key
-        self._tooltips = {}
+        self._tooltips: dict[T, str] = {}
         self.selected = self.states[0]
 
     @cached_property
@@ -45,7 +48,7 @@ class ButtonSwitchController:
                 self._tooltips[state] = self.options[state].pop('tooltip')
         return button
 
-    def get_next_state(self):
+    def get_next_state(self) -> T:
         return self.states[cycled_shift(
             self.states.index(self.selected),
             len(self.states)
@@ -54,14 +57,13 @@ class ButtonSwitchController:
     def event_handler(self, event: str, window: sg.Window, values):
         self.change_state(self.get_next_state(), window)
 
-    def change_state(self, new_state: str, window: sg.Window):
+    def change_state(self, new_state: T, window: sg.Window):
         btn: sg.Button = window[self.key]
-        options = self.options[new_state]
         self.selected = new_state
         tooltip = self._tooltips.get(new_state)
         if tooltip is not None:
             btn.set_tooltip(tooltip)
-        btn.update(**options)
+        btn.update(**self.options[new_state])
 
 
 class PageSwitchController:
