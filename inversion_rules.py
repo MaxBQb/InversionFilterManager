@@ -19,6 +19,9 @@ class InversionRule:
     exclude: bool = None
 
     def __post_init__(self):
+        self.use_root_title = self.use_root_title or None
+        self.exclude = self.exclude or None
+
         if self.path is not None:
             self.path_regex = None
         elif self.path_regex is None:
@@ -29,6 +32,7 @@ class InversionRule:
             self.title_regex = None
         elif self.title_regex is None:
             self._check_title = False
+            self.use_root_title = None
 
         self._title_regex = try_compile(self.title_regex)
         self._path_regex = try_compile(self.path_regex)
