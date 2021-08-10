@@ -2,8 +2,7 @@ import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task
 from configobj import ConfigObj
-from apps_rules import AppsRulesController
-from apps_rules import AppRule
+from inversion_rules import InversionRule, InversionRulesController
 import inject
 
 
@@ -12,8 +11,8 @@ class App:
         from realtime_data_sync import ConfigFileManager, RulesFileManager
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
-        self.apps_rules = AppsRulesController()
-        self.apps_rules_file_manager = RulesFileManager("apps", self.apps_rules)
+        self.inversion_rules = InversionRulesController()
+        self.inversion_rules_file_manager = RulesFileManager("inversion", self.inversion_rules)
         self.state_controller = FilterStateController()
         self.interaction_manager = InteractionManager()
         inject.configure(self.configure)
@@ -57,14 +56,14 @@ class App:
 
     def configure(self, binder: inject.Binder):
         binder.bind(ConfigObj, self.config)
-        binder.bind(AppsRulesController, self.apps_rules)
+        binder.bind(InversionRulesController, self.inversion_rules)
         binder.bind(FilterStateController, self.state_controller)
         binder.bind(InteractionManager, self.interaction_manager)
 
 
 class FilterStateController:
     config = inject.attr(ConfigObj)
-    rules = inject.attr(AppsRulesController)
+    rules = inject.attr(InversionRulesController)
 
     def __init__(self):
         self.last_active_window = None
@@ -88,7 +87,7 @@ class FilterStateController:
 
 class InteractionManager:
     state_controller = inject.attr(FilterStateController)
-    rules = inject.attr(AppsRulesController)
+    rules_controller = inject.attr(InversionRulesController)
 
     def setup(self):
         initial_hotkey = 'ctrl+alt+'

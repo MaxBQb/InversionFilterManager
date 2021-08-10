@@ -1,6 +1,6 @@
 from file_tracker import FileTracker
 from configobj import ConfigObj
-from rules import RulesController
+from inversion_rules import InversionRulesController, InversionRule
 import jsons
 import yaml
 
@@ -60,8 +60,8 @@ class ConfigFileManager(FileTracker):
 
 
 class RulesFileManager(FileTracker):
-    def __init__(self, name: str, rules_controller: RulesController):
-        self.rules: dict[str, rules_controller.RT] = None
+    def __init__(self, name: str, rules_controller: InversionRulesController):
+        self.rules: dict[str, InversionRule] = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
         super().__init__(name + "_rules.yaml")
@@ -74,8 +74,7 @@ class RulesFileManager(FileTracker):
             if self.rules is None:
                 self.rules = {}
             for key in self.rules:
-                self.rules[key] = jsons.load(self.rules[key],
-                                             self.rules_controller.RT)
+                self.rules[key] = jsons.load(self.rules[key], InversionRule)
         except FileNotFoundError:
             self.rules = {}
         finally:

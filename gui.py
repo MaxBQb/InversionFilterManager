@@ -6,7 +6,7 @@ from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
-from apps_rules import AppsRulesController, AppRule
+from inversion_rules import InversionRule, InversionRulesController
 from os.path import dirname
 
 
@@ -76,10 +76,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.title_button: ButtonSwitchController = None
         self.use_root_title_button: ButtonSwitchController = None
         self.name: str = None
-        self.rule: AppRule = None
+        self.rule: InversionRule = None
         self.path_ref = [self.winfo.path]
 
-    def run(self) -> tuple[AppRule, str]:
+    def run(self) -> tuple[InversionRule, str]:
         super().run()
         return self.rule, self.name
 
@@ -271,7 +271,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 self.TextState.PLAIN: (value, None),
             }.get(button.selected)
 
-        self.rule = AppRule(
+        self.rule = InversionRule(
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
             self.use_root_title_button.selected == self.RootState.ROOT
@@ -318,7 +318,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
 
 class RuleRemovingWindow(BaseInteractiveWindow):
-    all_rules = inject.attr(AppsRulesController)
+    all_rules = inject.attr(InversionRulesController)
     title = gui_utils.get_title("select rules")
 
     class ButtonState(StrHolder):
@@ -480,7 +480,7 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
     class ID(BaseNonBlockingWindow.ID):
         INPUT: str
 
-    def __init__(self, rule: AppRule, name: str):
+    def __init__(self, rule: InversionRule, name: str):
         super().__init__()
         self.rule = rule
         self.name = name

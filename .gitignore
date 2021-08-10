@@ -262,4 +262,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,pycharm+all,python
 /config.ini
-/apps_rules.yaml
+/inversion_rules.yaml
