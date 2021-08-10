@@ -117,7 +117,7 @@ class InteractionManager:
             return
 
         rules = RuleRemovingWindow(list(
-            self.rules.filter_rules(winfo)
+            self.rules.filter_rules(winfo, self.rules.rules)
         )).run()
         if not rules:
             return
