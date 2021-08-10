@@ -21,6 +21,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
     class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
         BUTTON_USE_ROOT_TITLE: str
+        BUTTON_EXCLUSIVE_RULE: str
         BUTTON_PATH: str
         BUTTON_PATH_BROWSE: str
         LABEL_TITLE: str
@@ -60,6 +61,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.path_button: MultiStateButton = None
         self.title_button: MultiStateButton = None
         self.use_root_title_button: Switcher = None
+        self.exclusive_rule: Switcher = None
         self.name: str = None
         self.rule: InversionRule = None
         self.path_ref = [self.winfo.path]
@@ -95,6 +97,20 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.ID.BUTTON_USE_ROOT_TITLE,
             self.common_options,
         )
+        self.exclusive_rule = Switcher(
+            dict(
+                tooltip="DISABLE color inversion filter if window match",
+                button_text="EXCLUDE",
+                button_color="#2F4F4F",
+            ),
+            dict(
+                tooltip="ENABLE color inversion filter if window match",
+                button_text="INCLUDE",
+                button_color="#FF4500",
+            ),
+            self.ID.BUTTON_EXCLUSIVE_RULE,
+            self.common_options,
+        )
         label_options = dict(
             auto_size_text=False,
             size=(5, 1)
@@ -115,6 +131,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     key=self.ID.INPUT_NAME,
                     **gui_utils.INPUT_DEFAULTS
                 ),
+                self.exclusive_rule.button,
             ],
             [
                 sg.Text(
@@ -226,6 +243,10 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.use_root_title_button.event_handler
         )
         self.add_event_handlers(
+            self.exclusive_rule.key,
+            self.exclusive_rule.event_handler
+        )
+        self.add_event_handlers(
             self.ID.INPUT_PATH_BROWSED,
             self.on_browse_path
         )
@@ -266,7 +287,8 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.rule = InversionRule(
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
-            self.use_root_title_button.selected
+            self.use_root_title_button.selected,
+            self.exclusive_rule.selected
         )
         self.name = values[self.ID.INPUT_NAME]
         self.close()
