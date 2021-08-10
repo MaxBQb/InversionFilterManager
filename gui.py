@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from natsort import os_sorted
 from active_window_checker import WindowInfo
-from custom_gui_elements import ButtonSwitchController, PageSwitchController
+from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
 from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
@@ -17,10 +17,6 @@ class RuleCreationWindow(BaseInteractiveWindow):
         PLAIN: str
         REGEX: str
         DISABLED: str
-
-    class RootState(StrHolder):
-        ROOT: str
-        CURRENT: str
 
     class ID(BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
@@ -54,17 +50,6 @@ class RuleCreationWindow(BaseInteractiveWindow):
         ),
     } | path_button_options
 
-    title_root_button_options = {
-        RootState.CURRENT: dict(
-            tooltip="Use title from current window",
-            button_text="CURRENT"
-        ),
-        RootState.ROOT: dict(
-            tooltip="Use title from main (root) window",
-            button_text="ROOT"
-        ),
-    }
-
     common_options = gui_utils.BUTTON_DEFAULTS | dict(
         auto_size_button=False
     )
@@ -72,9 +57,9 @@ class RuleCreationWindow(BaseInteractiveWindow):
     def __init__(self, winfo: WindowInfo):
         super().__init__()
         self.winfo = winfo
-        self.path_button: ButtonSwitchController = None
-        self.title_button: ButtonSwitchController = None
-        self.use_root_title_button: ButtonSwitchController = None
+        self.path_button: MultiStateButton = None
+        self.title_button: MultiStateButton = None
+        self.use_root_title_button: Switcher = None
         self.name: str = None
         self.rule: InversionRule = None
         self.path_ref = [self.winfo.path]
@@ -88,20 +73,27 @@ class RuleCreationWindow(BaseInteractiveWindow):
 
     def build_layout(self):
         name = self.winfo.name.removesuffix(".exe").title()
-        self.path_button = ButtonSwitchController(
+        self.path_button = MultiStateButton(
             self.path_button_options,
             self.ID.BUTTON_PATH,
             self.common_options
         )
-        self.title_button = ButtonSwitchController(
+        self.title_button = MultiStateButton(
             self.title_button_options,
             self.ID.BUTTON_TITLE,
             self.common_options
         )
-        self.use_root_title_button = ButtonSwitchController(
-            self.title_root_button_options,
+        self.use_root_title_button = Switcher(
+            dict(
+                tooltip="Use title from main (root) window",
+                button_text="ROOT"
+            ),
+            dict(
+                tooltip="Use title from current window",
+                button_text="CURRENT"
+            ),
             self.ID.BUTTON_USE_ROOT_TITLE,
-            self.common_options
+            self.common_options,
         )
         label_options = dict(
             auto_size_text=False,
@@ -274,13 +266,13 @@ class RuleCreationWindow(BaseInteractiveWindow):
         self.rule = InversionRule(
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
-            self.use_root_title_button.selected == self.RootState.ROOT
+            self.use_root_title_button.selected
         )
         self.name = values[self.ID.INPUT_NAME]
         self.close()
 
     def get_toggle_escape_handler(self,
-                                  switcher: ButtonSwitchController,
+                                  switcher: MultiStateButton,
                                   input_id: str):
         def on_button_switched(event: str,
                                window: sg.Window,
@@ -292,7 +284,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         return on_button_switched
 
     def get_regex_open_test_handlers(self,
-                                     switcher: ButtonSwitchController,
+                                     switcher: MultiStateButton,
                                      label_id: str,
                                      input_id: str,
                                      default_value: list[str]):
@@ -321,33 +313,31 @@ class RuleRemovingWindow(BaseInteractiveWindow):
     all_rules = inject.attr(InversionRulesController)
     title = gui_utils.get_title("select rules")
 
-    class ButtonState(StrHolder):
-        SKIP: str
-        REMOVE: str
-
     class ID(BaseInteractiveWindow.ID):
-        ACTION: str
+        BUTTON_REMOVE_RULE: str
+        BUTTON_REMOVE_ALL_RULES: str
         DESCRIPTION: str
-        COMMON_ACTION: str
         PAGES: str
 
-    BUTTON_OPTIONS = {
-        ButtonState.SKIP: dict(
-            tooltip="Preserve this rule",
-            button_color="#2F4F4F",
-        ),
-        ButtonState.REMOVE: dict(
+    BUTTON_OPTIONS = (
+        dict(
             tooltip="Remove this rule",
             button_color="#8B0000",
+            button_text="REMOVE"
         ),
-    }
+        dict(
+            tooltip="Preserve this rule",
+            button_color="#2F4F4F",
+            button_text="SKIP"
+        ),
+    )
 
     def __init__(self, rules: list[str]):
         super().__init__()
         self.rules = os_sorted(rules)
         self.description_button_keys: list[str] = []
-        self.actions: list[ButtonSwitchController] = []
-        self.common_action: ButtonSwitchController = None
+        self.remove_rule_buttons: list[Switcher] = []
+        self.remove_all_rules_button: Switcher = None
         self.pages: PageSwitchController = None
         self.rules_to_remove: set[str] = set()
 
@@ -363,9 +353,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             auto_size_button=False,
         )
 
-        self.common_action = ButtonSwitchController(
-            self.BUTTON_OPTIONS,
-            self.ID.COMMON_ACTION,
+        self.remove_all_rules_button = Switcher(
+            *self.BUTTON_OPTIONS,
+            self.ID.BUTTON_REMOVE_ALL_RULES,
             common_switcher_options
         )
 
@@ -379,7 +369,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         self.layout = [
             [sg.Text(("Rule" if single_rule else "List of rules") +
                      " associated with this window:")],
-            [sg.Text("Common state:", pad=(0, 0)), self.common_action.button] if not single_rule else [],
+            [sg.Text("Common state:", pad=(0, 0)), self.remove_all_rules_button.button] if not single_rule else [],
             [self.pages.get_pages_holder()],
             [*self.pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
                 pad=pad
@@ -401,24 +391,22 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                     metadata=name
                 )
             )
-            self.actions.append(
-                ButtonSwitchController(
-                    self.BUTTON_OPTIONS,
-                    gui_utils.join_id(self.ID.ACTION, str(i)),
-                    common_switcher_options | dict(
-                        metadata=name
-                    )
+            self.remove_rule_buttons.append(Switcher(
+                *self.BUTTON_OPTIONS,
+                gui_utils.join_id(self.ID.BUTTON_REMOVE_RULE, str(i)),
+                common_switcher_options | dict(
+                    metadata=name
                 )
-            )
-            rule_buttons.append(self.actions[-1].button)
+            ))
+            rule_buttons.append(self.remove_rule_buttons[-1].button)
         return rule_buttons
 
     def set_handlers(self):
         super().set_handlers()
-        for action in self.actions:
+        for button in self.remove_rule_buttons:
             self.add_event_handlers(
-                action.key,
-                action.event_handler
+                button.key,
+                button.event_handler
             )
         for key in self.description_button_keys:
             self.add_event_handlers(
@@ -427,9 +415,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             )
         self.description_button_keys = None
         self.add_event_handlers(
-            self.common_action.key,
-            self.common_action.event_handler,
-            self.on_common_action_click
+            self.remove_all_rules_button.key,
+            self.remove_all_rules_button.event_handler,
+            self.on_remove_all_click
         )
 
     def init_window(self, **kwargs):
@@ -437,13 +425,13 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             element_justification='center'
         )
 
-    def on_common_action_click(self,
-                               event: str,
-                               window: sg.Window,
-                               values):
-        for action in self.actions:
-            action.change_state(
-                self.common_action.selected,
+    def on_remove_all_click(self,
+                            event: str,
+                            window: sg.Window,
+                            values):
+        for button in self.remove_rule_buttons:
+            button.change_state(
+                self.remove_all_rules_button.selected,
                 window
             )
 
@@ -467,9 +455,9 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                   window: sg.Window,
                   values):
         self.rules_to_remove = {
-            window[action.key].metadata
-            for action in self.actions
-            if action.selected == self.ButtonState.REMOVE
+            window[button.key].metadata
+            for button in self.remove_rule_buttons
+            if button.selected
         }
         self.close()
 

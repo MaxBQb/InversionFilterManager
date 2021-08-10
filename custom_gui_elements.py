@@ -6,20 +6,16 @@ T = TypeVar('T')
 OPTIONS = dict[str, Any]
 
 
-class ButtonSwitchController(Generic[T]):
+class MultiStateButton(Generic[T]):
     def __init__(self,
                  options: dict[T, OPTIONS],
                  key: str,
                  common_options: OPTIONS = {},
-                 common_size=False):
+                 common_size=False,
+                 initial_state=None):
         self.states: tuple[T] = tuple(options)
         self.options: dict[T, OPTIONS] = dict(options)
-
-        for state in self.states:
-            # default param set + deepcopy
-            self.options[state] = dict(
-                button_text=state,
-            ) | self.options[state]
+        self.apply_default_names()
 
         if common_size:
             size = (max_len(
@@ -34,7 +30,16 @@ class ButtonSwitchController(Generic[T]):
         self.common_options: OPTIONS = common_options
         self.key = key
         self._tooltips: dict[T, str] = {}
-        self.selected = self.states[0]
+        if initial_state is None:
+            initial_state = self.states[0]
+        self.selected = initial_state
+
+    def apply_default_names(self):
+        for state in self.states:
+            # default param set + 2-level copy
+            self.options[state] = dict(
+                button_text=state,
+            ) | self.options[state]
 
     @cached_property
     def button(self):
@@ -64,6 +69,30 @@ class ButtonSwitchController(Generic[T]):
         if tooltip is not None:
             btn.set_tooltip(tooltip)
         btn.update(**self.options[new_state])
+
+
+class Switcher(MultiStateButton):
+    def __init__(self,
+                 on_options: OPTIONS,
+                 off_options: OPTIONS,
+                 key: str,
+                 common_options: OPTIONS = {},
+                 common_size=False,
+                 initial_state=None):
+        options = {
+            False: off_options,
+            True: on_options,
+        }
+        super().__init__(options, key,
+                         common_options,
+                         common_size,
+                         initial_state)
+
+    def apply_default_names(self):
+        for state in self.states:
+            self.options[state] = dict(
+                button_text="ON" if state else "OFF",
+            ) | self.options[state]
 
 
 class PageSwitchController:
