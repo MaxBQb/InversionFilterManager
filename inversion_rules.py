@@ -16,7 +16,7 @@ class InversionRule:
     title: str = None
     title_regex: str = None
     use_root_title: bool = None
-    exclude = None
+    exclude: bool = None
 
     def __post_init__(self):
         if self.path is not None:
