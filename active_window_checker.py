@@ -110,13 +110,22 @@ def get_window_info(hwnd) -> WindowInfo:
     return winfo
 
 
+def is_root(hwnd: int, candidate_hwnd: int):
+    return (candidate_hwnd != 0
+            and (hwnd == candidate_hwnd
+                 or win32gui.IsChild(candidate_hwnd, hwnd)))
+
+
 def get_root(hwnd: int):
     active = (win32gui.GetForegroundWindow() or
               win32gui.GetFocus())
 
-    if active and (hwnd == active or
-                   win32gui.IsChild(active, hwnd)):
+    if is_root(hwnd, active):
         return active
+
+    owner = win32gui.GetWindow(hwnd, win32con.GW_OWNER)
+    if is_root(hwnd, owner):
+        return owner
 
     start = hwnd
     last_hwnd = 0
