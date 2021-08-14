@@ -8,8 +8,7 @@ async def main():
     print('Hi, there!')
     app = App()
     init_theme()
-    app.run()
-    print("I'm async")
+    await app.run()
 
 
 def bootstrap():

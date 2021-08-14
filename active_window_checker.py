@@ -164,7 +164,7 @@ def titles(iterable):
         yield win32gui.GetWindowText(hwnd)
 
 
-async def listen_switch_events(callback):
+def listen_switch_events(callback):
     ole32.CoInitialize(0)
 
     WinEventProc = WinEventProcType(callback)

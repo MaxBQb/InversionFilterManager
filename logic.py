@@ -1,8 +1,8 @@
 import color_filter
 from keyboard import add_hotkey
-from asyncio import create_task
+from asyncio import create_task, to_thread
 from configobj import ConfigObj
-from inversion_rules import InversionRule, InversionRulesController
+from inversion_rules import InversionRulesController
 import inject
 
 
@@ -17,16 +17,23 @@ class App:
         self.interaction_manager = InteractionManager()
         inject.configure(self.configure)
 
-    def run(self):
+    async def run(self):
+        from asyncio import gather
         from active_window_checker import listen_switch_events
         from auto_update import check_for_updates
+        tasks = []
         if self.config["update"]["check_for_updates"]:
-            create_task(check_for_updates(self.handle_update,
-                                          self.config["update"]["ask_before_update"]))
-        create_task(listen_switch_events(
+            tasks.append(create_task(check_for_updates(
+                self.handle_update,
+                self.config["update"]["ask_before_update"]
+            )))
+        tasks.append(create_task(to_thread(
+            listen_switch_events,
             self.state_controller.on_active_window_switched
-        ))
+        )))
         self.interaction_manager.setup()
+        print("I'm async")
+        await gather(*tasks)
 
     def handle_update(self, new_path, current_path, backup_filename):
         try:
