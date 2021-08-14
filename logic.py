@@ -32,6 +32,9 @@ class App:
             self.state_controller.on_active_window_switched
         )))
         self.interaction_manager.setup()
+        tasks.append(create_task(
+            self.interaction_manager.run_tray()
+        ))
         print("I'm async")
         await gather(*tasks)
 
@@ -96,6 +99,10 @@ class InteractionManager:
     state_controller = inject.attr(FilterStateController)
     rules_controller = inject.attr(InversionRulesController)
 
+    def __init__(self):
+        from gui import Tray
+        self.tray = Tray()
+
     def setup(self):
         initial_hotkey = 'ctrl+alt+'
 
@@ -106,6 +113,9 @@ class InteractionManager:
 
         for k, v in hotkeys.items():
             add_hotkey(initial_hotkey+k, v)
+
+    async def run_tray(self):
+        await to_thread(self.tray.run)
 
     def append_current_app(self):
         from gui import RuleCreationWindow

@@ -2,7 +2,8 @@ configobj==5.0.6
 jsons==1.4.2
 keyboard==0.13.5
 pretty-downloader==0.0.9
-PySimpleGUI==4.45.0
+PySimpleGUI==4.46.0
+psgtray==1.0.1
 pywin32==301
 PyYAML==5.4.1
 watchdog==2.1.3

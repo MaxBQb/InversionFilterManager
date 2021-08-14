@@ -608,3 +608,72 @@ def test_regex(regex: str, text: str):
         regex=regex,
         testString=text
     )))
+
+
+class Tray:
+    def __init__(self):
+        from psgtray import SystemTray
+        self.window: sg.Window = None
+        self.menu = ['', []]
+        self.tray: SystemTray = None
+        self.tray_events: dict[str] = dict()
+
+    def run(self):
+        try:
+            self.build_menu()
+            self.init_window()
+            self.create_tray()
+            self.listen_tray()
+        finally:
+            self.tray.close()
+            self.window.close()
+
+    def build_menu(self):
+        import _meta as app
+
+        self.menu[-1] = [
+            f'!{app.__product_name__} v{app.__version__}',
+            '---',
+            '&Open', [
+                '&Work directory',
+                '&Config file',
+                '&Inversion rules file',
+            ],
+            '---',
+            '&Add app to inversion rules',
+            '!&Remove app from inversion rules',
+            '---',
+            'Check for &updates',
+            '---',
+            '&Quit'
+        ]
+
+    def init_window(self):
+        self.window = sg.Window(
+            gui_utils.get_title("tray"),
+            layout=[[]],
+            finalize=True,
+            alpha_channel=0,
+            no_titlebar=True,
+        )
+        self.window.hide()
+
+    def listen_tray(self):
+        while True:
+            event, values = self.window.read()
+            if event == sg.WIN_CLOSED:
+                break
+            if event == self.tray.DEFAULT_KEY:
+                func = self.tray_events.get(values[0], None)
+                if func:
+                    func(values)
+
+    def create_tray(self):
+        from psgtray import SystemTray
+        from _meta import __product_name__ as product
+        self.tray = SystemTray(
+            menu=self.menu,
+            icon="img/inversion_manager.ico",
+            tooltip=product,
+            window=self.window
+        )
