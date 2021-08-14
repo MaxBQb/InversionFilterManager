@@ -34,13 +34,6 @@ def get_title(title: str):
     return f"{app_name}: {title.title()}"
 
 
-def create_layout(title: str, *rows):
-    return [
-        [sg.Titlebar(title=title)],
-        *rows
-    ]
-
-
 def hide(window, key: str):
     window[key].update(visible=False)
 
@@ -119,7 +112,10 @@ class BaseNonBlockingWindow:
     def add_title(self, **kwargs):
         self.layout.insert(0, [sg.Titlebar(
             title=self.title,
-            **kwargs
+            **(dict(
+                icon="img/inversion_manager.png",
+                font=("Tahoma", 12)
+            ) | kwargs)
         )])
 
     def add_submit_button(self, **kwargs):
