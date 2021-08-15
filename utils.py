@@ -1,4 +1,7 @@
 import re
+import os
+import subprocess
+FILEBROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
 
 
 class MetaInitHook(type):
@@ -126,3 +129,13 @@ def change_escape(text: str, escape: bool):
 def alternative_path(path: str):
     from os.path import altsep, split
     return altsep.join(split(path))
+
+
+def explore(path):
+    path = os.path.normpath(path)
+    if not os.path.exists(path):
+        return False
+    args = [path]
+    if os.path.isfile(path):
+        args.insert(0, '/open,')
+    subprocess.run([FILEBROWSER_PATH, *args])

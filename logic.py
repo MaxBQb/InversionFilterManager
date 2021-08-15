@@ -3,12 +3,12 @@ from keyboard import add_hotkey
 from asyncio import create_task, to_thread
 from configobj import ConfigObj
 from inversion_rules import InversionRulesController
+from realtime_data_sync import ConfigFileManager, RulesFileManager
 import inject
 
 
 class App:
     def __init__(self):
-        from realtime_data_sync import ConfigFileManager, RulesFileManager
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.inversion_rules = InversionRulesController()
@@ -67,6 +67,7 @@ class App:
     def configure(self, binder: inject.Binder):
         binder.bind(ConfigObj, self.config)
         binder.bind(InversionRulesController, self.inversion_rules)
+        binder.bind(RulesFileManager, self.inversion_rules_file_manager)
         binder.bind(FilterStateController, self.state_controller)
         binder.bind(InteractionManager, self.interaction_manager)
 

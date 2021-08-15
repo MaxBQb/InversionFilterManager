@@ -1,8 +1,10 @@
 import PySimpleGUI as sg
+from configobj import ConfigObj
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
-from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path
+from realtime_data_sync import RulesFileManager
+from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path, explore
 import gui_utils
 from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
 import inject
@@ -611,6 +613,9 @@ def test_regex(regex: str, text: str):
 
 
 class Tray:
+    config = inject.attr(ConfigObj)
+    rules_file_manager = inject.attr(RulesFileManager)
+
     def __init__(self):
         from psgtray import SystemTray
         self.window: sg.Window = None
@@ -631,13 +636,22 @@ class Tray:
     def build_menu(self):
         import _meta as app
 
+        def link(option: str, func):
+            self.tray_events[option] = func
+            return option
+
+        def _open(path):
+            def __open(*ignore):
+                explore(path)
+            return __open
+
         self.menu[-1] = [
             f'!{app.__product_name__} v{app.__version__}',
             '---',
             '&Open', [
-                '&Work directory',
-                '&Config file',
-                '&Inversion rules file',
+                link('&Work directory', _open(".")),
+                link('&Config file', _open(self.config.filename)),
+                link('&Inversion rules file', _open(self.rules_file_manager.filename)),
             ],
             '---',
             '&Add app to inversion rules',
