@@ -100,8 +100,7 @@ def get_window_info(hwnd) -> WindowInfo:
         )
         if winfo.pid:
             winfo.path = getProcessFilename(winfo.pid)
-    except win32process.error:
-        return None
+
     except ProcessLookupError:
         return None
 
