@@ -665,8 +665,8 @@ class Tray:
                 )
             ),
             Menu.SEPARATOR,
-            MenuItem(ref('Add app to inversion rules'), None),
-            MenuItem(ref('Remove app from inversion rules'), None),
+            MenuItem(ref('Add app to inversion rules (Ctrl+Alt+\'+\')'), None, enabled=False),
+            MenuItem(ref('Remove app from inversion rules (Ctrl+Alt+\'-\')'), None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(f'Check for {ref("updates")}', None),
             Menu.SEPARATOR,
