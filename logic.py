@@ -1,3 +1,5 @@
+import asyncio
+import threading
 import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task, to_thread
@@ -10,6 +12,7 @@ import inject
 
 class App:
     def __init__(self):
+        from queue import Queue
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.inversion_rules = InversionRulesController()
@@ -17,9 +20,11 @@ class App:
         self.state_controller = FilterStateController()
         self.interaction_manager = InteractionManager()
         inject.configure(self.configure)
+        self.callbacks = Queue()
+        self.is_running = True
+        self.window_switch_listener_thread = [None]
 
     async def run(self):
-        from asyncio import gather
         from active_window_checker import listen_switch_events
         from auto_update import check_for_updates
         tasks = []
@@ -30,14 +35,41 @@ class App:
             )))
         tasks.append(create_task(to_thread(
             listen_switch_events,
-            self.state_controller.on_active_window_switched
+            self.state_controller.on_active_window_switched,
+            self.window_switch_listener_thread
         )))
+
         self.interaction_manager.setup()
         tasks.append(create_task(
             self.interaction_manager.run_tray()
         ))
+        tasks.append(create_task(
+            self.run_callbacks()
+        ))
         print("I'm async")
-        await gather(*tasks)
+        try:
+            await asyncio.gather(*tasks)
+        except asyncio.exceptions.CancelledError:
+            pass
+        print("Bye")
+
+    async def run_callbacks(self):
+        while self.is_running:
+            callback = self.callbacks.get()
+            callback()
+
+    def close(self):
+        import win32con
+        import win32api
+        if self.redirect_to_main_thread(self.close):
+            return
+        self.is_running = False
+        win32api.PostThreadMessage(
+            self.window_switch_listener_thread[0],
+            win32con.WM_QUIT, 0, 0
+        )
+        for task in asyncio.all_tasks():
+            task.cancel()
 
     def handle_update(self, new_path, current_path, backup_filename):
         try:
@@ -71,6 +103,14 @@ class App:
         binder.bind(RulesFileManager, self.inversion_rules_file_manager)
         binder.bind(FilterStateController, self.state_controller)
         binder.bind(InteractionManager, self.interaction_manager)
+        binder.bind(App, self)
+
+    def redirect_to_main_thread(self, func, *args, **kwargs):
+        if threading.current_thread() != threading.main_thread():
+            callback = lambda: func(*args, **kwargs)
+            self.callbacks.put_nowait(callback)
+            return True
+        return False
 
 
 class FilterStateController:

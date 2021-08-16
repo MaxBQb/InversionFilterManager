@@ -3,6 +3,7 @@ from configobj import ConfigObj
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
+from logic import App
 from realtime_data_sync import RulesFileManager
 from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path, explore
 import gui_utils
@@ -615,10 +616,10 @@ def test_regex(regex: str, text: str):
 class Tray:
     config = inject.attr(ConfigObj)
     rules_file_manager = inject.attr(RulesFileManager)
+    app = inject.attr(App)
 
     def __init__(self):
-        from pystray import Icon
-        self.tray: Icon = None
+        self.tray = None
 
     def run(self):
         from _meta import __product_name__
@@ -628,10 +629,11 @@ class Tray:
             __product_name__,
             Image.open("img/inversion_manager.ico"),
             menu=self.build_menu()
-        ).run()
+        )
+        self.tray.run()
 
     def close(self):
-        self.tray.shutdown()
+        self.tray.stop()
 
     def build_menu(self):
         from pystray import Menu, MenuItem
@@ -670,5 +672,5 @@ class Tray:
             Menu.SEPARATOR,
             MenuItem(f'Check for {ref("updates")}', None),
             Menu.SEPARATOR,
-            MenuItem(ref('Exit'), None),
+            MenuItem(ref('Exit'), self.app.close),
         )

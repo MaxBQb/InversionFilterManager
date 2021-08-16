@@ -11,6 +11,7 @@ and David Heffernan:
 
 # using pywin32 for constants and ctypes for everything else seems a little
 # indecisive, but whatevs.
+import win32api
 import win32con
 import win32gui
 import win32process
@@ -169,7 +170,7 @@ def titles(iterable):
         yield win32gui.GetWindowText(hwnd)
 
 
-def listen_switch_events(callback):
+def listen_switch_events(callback, out_thread_id):
     ole32.CoInitialize(0)
 
     WinEventProc = WinEventProcType(callback)
@@ -180,10 +181,8 @@ def listen_switch_events(callback):
         print('SetWinEventHook failed')
         sys.exit(1)
 
-    msg = ctypes.wintypes.MSG()
-    while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) != 0:
-        user32.TranslateMessage(msg)
-        user32.DispatchMessageW(msg)
+    out_thread_id[0] = win32api.GetCurrentThreadId()
+    win32gui.PumpMessages()
 
     for hookID in hookIDs:
         user32.UnhookWinEvent(hookID)
