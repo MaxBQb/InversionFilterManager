@@ -78,8 +78,7 @@ class WindowInfo:
 def getProcessFilename(processID):
     hProcess = kernel32.OpenProcess(processFlag, 0, processID)
     if not hProcess:
-        print(f"OpenProcess({processID}) failed: {ctypes.WinError()}", file=sys.stderr)
-        return None
+        raise ProcessLookupError(f"OpenProcess({processID}) failed: {ctypes.WinError()}")
 
     try:
         filenameBufferSize = ctypes.wintypes.DWORD(4096)
@@ -93,14 +92,18 @@ def getProcessFilename(processID):
 
 
 def get_window_info(hwnd) -> WindowInfo:
-    winfo = WindowInfo(
-        hwnd,
-        win32gui.GetWindowText(hwnd),
-        pid=win32process.GetWindowThreadProcessId(hwnd)[1]
-    )
-
-    if winfo.pid:
-        winfo.path = getProcessFilename(winfo.pid)
+    try:
+        winfo = WindowInfo(
+            hwnd,
+            win32gui.GetWindowText(hwnd),
+            pid=win32process.GetWindowThreadProcessId(hwnd)[1]
+        )
+        if winfo.pid:
+            winfo.path = getProcessFilename(winfo.pid)
+    except win32process.error:
+        return None
+    except ProcessLookupError:
+        return None
 
     root_hwnd = get_root(hwnd)
     if root_hwnd != 0:
@@ -123,9 +126,12 @@ def get_root(hwnd: int):
     if is_root(hwnd, active):
         return active
 
-    owner = win32gui.GetWindow(hwnd, win32con.GW_OWNER)
-    if is_root(hwnd, owner):
-        return owner
+    try:
+        owner = win32gui.GetWindow(hwnd, win32con.GW_OWNER)
+        if is_root(hwnd, owner):
+            return owner
+    except win32gui.error:
+        pass
 
     start = hwnd
     last_hwnd = 0

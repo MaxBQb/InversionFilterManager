@@ -2,6 +2,7 @@ import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task, to_thread
 from configobj import ConfigObj
+from active_window_checker import WindowInfo
 from inversion_rules import InversionRulesController
 from realtime_data_sync import ConfigFileManager, RulesFileManager
 import inject
@@ -77,6 +78,8 @@ class FilterStateController:
     rules = inject.attr(InversionRulesController)
 
     def __init__(self):
+        from collections import deque
+        self.last_active_windows = deque(maxlen=10)
         self.last_active_window = None
 
     def on_active_window_switched(self,
@@ -90,7 +93,11 @@ class FilterStateController:
         from active_window_checker import get_window_info, eventTypes
         if idObject != 0:
             return
-        winfo = self.last_active_window = get_window_info(hwnd)
+        result = get_window_info(hwnd)
+        if not result:
+            return
+        winfo = self.last_active_window = result
+        self.last_active_windows.append(winfo)
         if self.config["display"]["show_events"]:
             print(winfo.path, eventTypes.get(event, hex(event)))
         color_filter.set_active(self.rules.is_inversion_required(winfo))
@@ -121,24 +128,25 @@ class InteractionManager:
         finally:
             self.tray.close()
 
-    def append_current_app(self):
+    def append_current_app(self, winfo: WindowInfo = None):
         from gui import RuleCreationWindow
-        winfo = self.state_controller.last_active_window
-        rule, name = RuleCreationWindow(winfo).run()
-        if name is None or not rule:
+        winfo = winfo or self.state_controller.last_active_window
+        if not winfo:
             return
-        self.rules_controller.add_rule(name, rule)
-        return
+        rule, name = RuleCreationWindow(winfo).run()
+        if name is not None and rule:
+            self.rules_controller.add_rule(name, rule)
 
-    def delete_current_app(self):
+    def delete_current_app(self, winfo: WindowInfo = None):
         from gui import RuleRemovingWindow
-        winfo = self.state_controller.last_active_window
+        winfo = winfo or self.state_controller.last_active_window
+        if not winfo:
+            return
         if not self.rules_controller.is_inversion_required(winfo):
             return
 
         rules = RuleRemovingWindow(list(
             self.rules_controller.get_active_rules(winfo, self.rules_controller.rules)
         )).run()
-        if not rules:
-            return
-        self.rules_controller.remove_rules(rules)
+        if rules:
+           self.rules_controller.remove_rules(rules)
