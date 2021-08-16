@@ -642,24 +642,33 @@ class Tray:
                 explore(path)
             return __open
 
+        def ref(text: str):
+            """
+            Make first letter underscored, also
+            mark this letter as shortcut for system tray,
+            so you may press this letter on keyboard
+            to select corresponding menu item
+            """
+            return f'&{text[0]}\u0332{text[1:]}'
+
         return Menu(
             MenuItem(
                 f'{app.__product_name__} v{app.__version__}',
                 None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(
-                '&Open',
+                ref('Open'),
                 Menu(
-                    MenuItem('&Work directory', _open(".")),
-                    MenuItem('&Config file', _open(self.config.filename)),
-                    MenuItem('&Inversion rules file', _open(self.rules_file_manager.filename))
+                    MenuItem(ref('Work directory'), _open(".")),
+                    MenuItem(ref('Config file'), _open(self.config.filename)),
+                    MenuItem(ref('Inversion rules file'), _open(self.rules_file_manager.filename))
                 )
             ),
             Menu.SEPARATOR,
-            MenuItem('&Add app to inversion rules', None),
-            MenuItem('&Remove app from inversion rules', None),
+            MenuItem(ref('Add app to inversion rules'), None),
+            MenuItem(ref('Remove app from inversion rules'), None),
             Menu.SEPARATOR,
-            MenuItem('Check for &updates', None),
+            MenuItem(f'Check for {ref("updates")}', None),
             Menu.SEPARATOR,
-            MenuItem('&Quit', None),
+            MenuItem(ref('Exit'), None),
         )
