@@ -617,77 +617,49 @@ class Tray:
     rules_file_manager = inject.attr(RulesFileManager)
 
     def __init__(self):
-        from psgtray import SystemTray
-        self.window: sg.Window = None
-        self.menu = ['', []]
-        self.tray: SystemTray = None
-        self.tray_events: dict[str] = dict()
+        from pystray import Icon
+        self.tray: Icon = None
 
     def run(self):
-        try:
-            self.build_menu()
-            self.init_window()
-            self.create_tray()
-            self.listen_tray()
-        finally:
-            self.tray.close()
-            self.window.close()
+        from _meta import __product_name__
+        from pystray import Icon
+        from PIL import Image
+        self.tray = Icon(
+            __product_name__,
+            Image.open("img/inversion_manager.ico"),
+            menu=self.build_menu()
+        ).run()
+
+    def close(self):
+        self.tray.shutdown()
 
     def build_menu(self):
+        from pystray import Menu, MenuItem
         import _meta as app
-
-        def link(option: str, func):
-            self.tray_events[option] = func
-            return option
 
         def _open(path):
             def __open(*ignore):
                 explore(path)
             return __open
 
-        self.menu[-1] = [
-            f'!{app.__product_name__} v{app.__version__}',
-            '---',
-            '&Open', [
-                link('&Work directory', _open(".")),
-                link('&Config file', _open(self.config.filename)),
-                link('&Inversion rules file', _open(self.rules_file_manager.filename)),
-            ],
-            '---',
-            '&Add app to inversion rules',
-            '!&Remove app from inversion rules',
-            '---',
-            'Check for &updates',
-            '---',
-            '&Quit'
-        ]
-
-    def init_window(self):
-        self.window = sg.Window(
-            gui_utils.get_title("tray"),
-            layout=[[]],
-            finalize=True,
-            alpha_channel=0,
-            no_titlebar=True,
-        )
-        self.window.hide()
-
-    def listen_tray(self):
-        while True:
-            event, values = self.window.read()
-            if event == sg.WIN_CLOSED:
-                break
-            if event == self.tray.DEFAULT_KEY:
-                func = self.tray_events.get(values[0], None)
-                if func:
-                    func(values)
-
-    def create_tray(self):
-        from psgtray import SystemTray
-        from _meta import __product_name__ as product
-        self.tray = SystemTray(
-            menu=self.menu,
-            icon="img/inversion_manager.ico",
-            tooltip=product,
-            window=self.window
+        return Menu(
+            MenuItem(
+                f'{app.__product_name__} v{app.__version__}',
+                None, enabled=False),
+            Menu.SEPARATOR,
+            MenuItem(
+                '&Open',
+                Menu(
+                    MenuItem('&Work directory', _open(".")),
+                    MenuItem('&Config file', _open(self.config.filename)),
+                    MenuItem('&Inversion rules file', _open(self.rules_file_manager.filename))
+                )
+            ),
+            Menu.SEPARATOR,
+            MenuItem('&Add app to inversion rules', None),
+            MenuItem('&Remove app from inversion rules', None),
+            Menu.SEPARATOR,
+            MenuItem('Check for &updates', None),
+            Menu.SEPARATOR,
+            MenuItem('&Quit', None),
         )

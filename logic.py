@@ -116,7 +116,10 @@ class InteractionManager:
             add_hotkey(initial_hotkey+k, v)
 
     async def run_tray(self):
-        await to_thread(self.tray.run)
+        try:
+            await to_thread(self.tray.run)
+        finally:
+            self.tray.close()
 
     def append_current_app(self):
         from gui import RuleCreationWindow

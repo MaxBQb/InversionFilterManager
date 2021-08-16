@@ -3,7 +3,8 @@ jsons==1.4.2
 keyboard==0.13.5
 pretty-downloader==0.0.9
 PySimpleGUI==4.46.0
-psgtray==1.0.1
+pystray==0.17.3
+Pillow==8.3.1
 pywin32==301
 PyYAML==5.4.1
 watchdog==2.1.3
