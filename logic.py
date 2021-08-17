@@ -146,6 +146,7 @@ class FilterStateController:
 class InteractionManager:
     state_controller = inject.attr(FilterStateController)
     rules_controller = inject.attr(InversionRulesController)
+    app = inject.attr(App)
 
     def __init__(self):
         from gui import Tray
@@ -170,6 +171,11 @@ class InteractionManager:
 
     def append_current_app(self, winfo: WindowInfo = None):
         from gui import RuleCreationWindow
+
+        if self.app.redirect_to_main_thread(
+                self.append_current_app):
+            return
+
         winfo = winfo or self.state_controller.last_active_window
         if not winfo:
             return
@@ -179,6 +185,11 @@ class InteractionManager:
 
     def delete_current_app(self, winfo: WindowInfo = None):
         from gui import RuleRemovingWindow
+
+        if self.app.redirect_to_main_thread(
+                self.delete_current_app):
+            return
+
         winfo = winfo or self.state_controller.last_active_window
         if not winfo:
             return
@@ -190,3 +201,33 @@ class InteractionManager:
         )).run()
         if rules:
            self.rules_controller.remove_rules(rules)
+
+    def choose_window_to_remove_rules(self):
+        from gui import ChooseRemoveCandidateWindow
+
+        if self.app.redirect_to_main_thread(
+                self.choose_window_to_remove_rules):
+            return
+
+        if not self.state_controller.last_active_window:
+            return
+        winfo = ChooseRemoveCandidateWindow(list(
+            self.state_controller.last_active_windows
+        )).run()
+        if winfo:
+            self.delete_current_app(winfo)
+
+    def choose_window_to_make_rule(self):
+        from gui import ChooseAppendCandidateWindow
+
+        if self.app.redirect_to_main_thread(
+                self.choose_window_to_make_rule):
+            return
+
+        if not self.state_controller.last_active_window:
+            return
+        winfo = ChooseAppendCandidateWindow(list(
+            self.state_controller.last_active_windows
+        )).run()
+        if winfo:
+            self.append_current_app(winfo)

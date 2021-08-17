@@ -139,3 +139,11 @@ def explore(path):
     if os.path.isfile(path):
         args.insert(0, '/open,')
     subprocess.run([FILEBROWSER_PATH, *args])
+
+
+def public_fields(object):
+    return (
+        (k, v)
+        for k, v in vars(object).items()
+        if not k.startswith('_')
+    )
