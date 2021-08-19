@@ -100,12 +100,17 @@ class App:
             print("Files to copy:", copy_list)
 
     def configure(self, binder: inject.Binder):
-        binder.bind(ConfigObj, self.config)
-        binder.bind(InversionRulesController, self.inversion_rules)
-        binder.bind(RulesFileManager, self.inversion_rules_file_manager)
-        binder.bind(FilterStateController, self.state_controller)
-        binder.bind(InteractionManager, self.interaction_manager)
-        binder.bind(App, self)
+        components = (
+            self.config,
+            self.inversion_rules,
+            self.inversion_rules_file_manager,
+            self.state_controller,
+            self.interaction_manager,
+            self.updater,
+            self,
+        )
+        for component in components:
+            binder.bind(component.__class__, component)
 
     def redirect_to_main_thread(self, func, *args, **kwargs):
         if threading.current_thread() != threading.main_thread():
