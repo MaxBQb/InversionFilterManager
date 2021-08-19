@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 from typing import Callable, Any
 from _meta import __product_name__ as app_name
-from utils import StrHolder, max_len, public_fields
+from utils import StrHolder, max_len
 
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",

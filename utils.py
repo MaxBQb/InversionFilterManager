@@ -132,13 +132,8 @@ def alternative_path(path: str):
 
 
 def explore(path):
-    path = os.path.normpath(path)
-    if not os.path.exists(path):
-        return False
-    args = [path]
-    if os.path.isfile(path):
-        args.insert(0, '/open,')
-    subprocess.run([FILEBROWSER_PATH, *args])
+    if os.path.exists(path):
+        subprocess.run([FILEBROWSER_PATH, os.path.normpath(path)])
 
 
 def public_fields(object):

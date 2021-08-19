@@ -168,7 +168,7 @@ class InteractionManager:
         }
 
         for k, v in hotkeys.items():
-            add_hotkey(initial_hotkey+k, v)
+            add_hotkey(initial_hotkey + k, v)
 
     def close(self):
         self.app.close()
@@ -210,7 +210,7 @@ class InteractionManager:
             self.rules_controller.get_active_rules(winfo, self.rules_controller.rules)
         )).run()
         if rules:
-           self.rules_controller.remove_rules(rules)
+            self.rules_controller.remove_rules(rules)
 
     def choose_window_to_remove_rules(self):
         from gui import ChooseRemoveCandidateWindow
