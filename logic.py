@@ -163,6 +163,9 @@ class InteractionManager:
         for k, v in hotkeys.items():
             add_hotkey(initial_hotkey+k, v)
 
+    def close(self):
+        self.app.close()
+
     async def run_tray(self):
         try:
             await to_thread(self.tray.run)

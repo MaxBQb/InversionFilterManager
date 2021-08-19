@@ -3,7 +3,6 @@ from configobj import ConfigObj
 from natsort import os_sorted
 from active_window_checker import WindowInfo
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
-from logic import App
 from logic import InteractionManager
 from realtime_data_sync import RulesFileManager
 from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path, explore, public_fields
@@ -739,7 +738,6 @@ class Tray:
     config = inject.attr(ConfigObj)
     rules_file_manager = inject.attr(RulesFileManager)
     im = inject.attr(InteractionManager)
-    app = inject.attr(App)
 
     def __init__(self):
         self.tray = None
@@ -801,5 +799,5 @@ class Tray:
             Menu.SEPARATOR,
             MenuItem(f'Check for {ref("updates")}', None),
             Menu.SEPARATOR,
-            MenuItem(ref('Exit'), self.app.close),
+            MenuItem(ref('Exit'), im.close),
         )
