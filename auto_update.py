@@ -36,11 +36,13 @@ class AutoUpdater:
         from datetime import timedelta
         self.delay = timedelta(days=1).total_seconds()
         self.response = Queue()
-        self.thread = Thread(
-            name="Update Checker",
-            target=self.check_loop,
-            daemon=True
-        )
+        self.developer_mode = sys.argv[0].endswith(".py")
+        if not self.developer_mode:
+            self.thread = Thread(
+                name="Update Checker",
+                target=self.check_loop,
+                daemon=True
+            )
         self.update_in_progress = False
 
     def on_update_applied(self,
@@ -50,6 +52,8 @@ class AutoUpdater:
         pass
 
     def run_check_loop(self):
+        if self.developer_mode:
+            return
         self.thread.start()
         return self.thread
 
@@ -79,13 +83,6 @@ class AutoUpdater:
 
             print("Latest version:", last_version_info.version_text)
 
-            if sys.argv[0].endswith(".py"):
-                print("ATTENTION: .py script updates aren't supported!")
-                print("If you aren't developer, please use .exe version instead")
-                print("You can get it here:",
-                      last_version_info.release_info.download_link)
-                return
-
             if not self.request_update(last_version_info):
                 print("Update canceled")
                 return
@@ -101,6 +98,7 @@ class AutoUpdater:
         self.im.request_update(
             version_info.version_text,
             version_info.release_info.size,
+            self.developer_mode,
             self.response
         )
         return self.response.get()

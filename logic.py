@@ -242,13 +242,18 @@ class InteractionManager:
         if winfo:
             self.append_current_app(winfo)
 
-    def request_update(self, latest, file_size, response: Queue):
+    def request_update(self,
+                       latest,
+                       file_size,
+                       developer_mode: bool,
+                       response: Queue):
         from gui import UpdateRequestWindow
 
         if self.app.redirect_to_main_thread(
-                self.request_update, latest, file_size, response):
+                self.request_update, latest,
+                file_size, developer_mode, response):
             return
 
         response.put_nowait(UpdateRequestWindow(
-            latest, file_size
+            latest, file_size, developer_mode
         ).run())

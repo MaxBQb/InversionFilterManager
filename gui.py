@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 from configobj import ConfigObj
 from natsort import os_sorted
 from active_window_checker import WindowInfo
+from auto_update import AutoUpdater
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
 from logic import InteractionManager
 from realtime_data_sync import RulesFileManager
@@ -530,10 +531,14 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
     class ID(gui_utils.ConfirmationWindow.ID):
         INPUT: str
 
-    def __init__(self, latest_version: str, file_size: int):
+    def __init__(self,
+                 latest_version: str,
+                 file_size: int,
+                 developer_mode: bool):
         super().__init__("Do you want to install new release?")
         self.latest_version = latest_version
         self.file_size = file_size
+        self.developer_mode = developer_mode
 
     def build_layout(self):
         import _meta as app
@@ -542,6 +547,19 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
         self.layout = [
             [gui_utils.center(sg.Text('Update info', font=("Verdana", 18)))]
         ]
+
+        if self.developer_mode:
+            self.layout.append([gui_utils.center(sg.Text(
+                'ATTENTION, YOU ARE IN DEVELOPER MODE',
+                font=("Tahoma", 16, 'bold'),
+                text_color='gold',
+                tooltip=
+                "You started this program from .py file\n"
+                "Run program from source codes needs only for developers\n"
+                "Normal users run program from .exe file\n"
+                "Note, that if you perform update, the normal .exe version\n"
+                "of program will override your project"
+            ))])
 
         description = dict(
             app_name=app.__product_name__,
@@ -738,6 +756,7 @@ class Tray:
     config = inject.attr(ConfigObj)
     rules_file_manager = inject.attr(RulesFileManager)
     im = inject.attr(InteractionManager)
+    updater = inject.attr(AutoUpdater)
 
     def __init__(self):
         self.tray = None
@@ -797,7 +816,8 @@ class Tray:
             MenuItem(ref('Remove app from inversion rules'),
                      im.choose_window_to_remove_rules),
             Menu.SEPARATOR,
-            MenuItem(f'Check for {ref("updates")}', None),
+            MenuItem(f'Check for {ref("updates")}',
+                     self.updater.check_for_updates),
             Menu.SEPARATOR,
             MenuItem(ref('Exit'), im.close),
         )
