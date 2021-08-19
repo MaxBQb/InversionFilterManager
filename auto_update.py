@@ -1,6 +1,12 @@
 import os
 import sys
 import shutil
+import inject
+from time import sleep
+from queue import Queue
+from pathlib import Path
+from configobj import ConfigObj
+from logic import InteractionManager
 from dataclasses import dataclass
 
 
@@ -21,43 +27,134 @@ class VersionInfo:
         return get_version(self.version_text)
 
 
-async def check_for_updates(on_update_applied=None, confirm_required=True):
-    try:
-        import _meta as app
-        client_version = get_version(app.__version__)
-        print("Current version:", app.__version__)
-        last_version_info = get_latest_version_info(
-            app.__author__,
-            app.__product_name__
+class AutoUpdater:
+    config = inject.attr(ConfigObj)
+    im = inject.attr(InteractionManager)
+
+    def __init__(self):
+        from threading import Thread
+        from datetime import timedelta
+        self.delay = timedelta(days=1).total_seconds()
+        self.response = Queue()
+        self.thread = Thread(
+            name="Update Checker",
+            target=self.check_loop,
+            daemon=True
         )
+        self.update_in_progress = False
 
-        if last_version_info.version <= client_version or \
-                not last_version_info.release_info:
-            print("No updates found")
-            return
+    def on_update_applied(self,
+                          new_path: Path,
+                          current_path: Path,
+                          backup_filename: str):
+        pass
 
-        print("Latest version:", last_version_info.version_text)
+    def run_check_loop(self):
+        self.thread.start()
+        return self.thread
 
-        if sys.argv[0].endswith(".py"):
-            print("ATTENTION: .py script updates aren't supported!")
-            print("If you aren't developer, please use .exe version instead")
-            print("You can get it here:",
-                  last_version_info.release_info.download_link)
-            return
+    def check_loop(self):
+        while True:
+            if self.config["update"]["check_for_updates"]:
+                self.check_for_updates()
+            sleep(self.delay)
 
-        if confirm_required:
-            from gui import UpdateRequestWindow
+    def check_for_updates(self):
+        try:
+            if self.update_in_progress:
+                return
 
-            if not UpdateRequestWindow(
-                last_version_info.version_text,
-                last_version_info.release_info.size,
-               ).run():
+            import _meta as app
+            client_version = get_version(app.__version__)
+            print("Current version:", app.__version__)
+            last_version_info = get_latest_version_info(
+                app.__author__,
+                app.__product_name__
+            )
+
+            if last_version_info.version <= client_version or \
+                    not last_version_info.release_info:
+                print("No updates found")
+                return
+
+            print("Latest version:", last_version_info.version_text)
+
+            if sys.argv[0].endswith(".py"):
+                print("ATTENTION: .py script updates aren't supported!")
+                print("If you aren't developer, please use .exe version instead")
+                print("You can get it here:",
+                      last_version_info.release_info.download_link)
+                return
+
+            if not self.request_update(last_version_info):
                 print("Update canceled")
                 return
 
-        update(last_version_info.release_info, on_update_applied)
-    except Exception as e:
-        print("Update failed:", e)
+            self.update(last_version_info.release_info)
+        except Exception as e:
+            self.update_in_progress = False
+            print("Update failed:", e)
+
+    def request_update(self, version_info):
+        if not self.config["update"]["ask_before_update"]:
+            return True
+        self.im.request_update(
+            version_info.version_text,
+            version_info.release_info.size,
+            self.response
+        )
+        return self.response.get()
+
+    def update(self, release_info: ReleaseArchiveInfo):
+        if self.update_in_progress:
+            return
+        self.update_in_progress = True
+        app_path = os.path.dirname(sys.argv[0])
+
+        if not check_write_access(app_path):
+            return
+
+        update_path = app_path + "_new"
+        parent_path, app_dir = os.path.split(app_path)
+
+        if not check_write_access(parent_path):
+            return
+
+        backup_name = app_dir + "_old"
+        backup_path = app_path + "_old"
+
+        rmdir(update_path)
+        os.mkdir(update_path)
+        print("Download latest release:", release_info.download_link)
+        from pretty_downloader import pretty_downloader
+        release_archive_path = pretty_downloader.download(release_info.download_link, update_path, block_size=8192)
+        unpack_once(release_archive_path, update_path)
+        make_backup(app_path, backup_path, backup_name)
+        shutil.move(os.path.join(os.path.realpath(app_path), backup_name + ".zip"), parent_path)
+
+        self.on_update_applied(
+            Path(update_path),
+            Path(app_path),
+            backup_name + ".zip"
+        )
+
+        if sys.platform == "win32":
+            self.complete_update_win32(app_path, update_path)
+        else:
+            raise NotImplementedError()
+
+    def complete_update_win32(self, current_path, new_path):
+        update_script_path = "..\\update.bat"
+        try_remove_file(update_script_path)
+        shutil.move(".\\update.bat", "..\\")
+        import subprocess
+        subprocess.Popen([
+                update_script_path,
+                os.path.basename(current_path),
+                os.path.basename(new_path)
+            ], creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
+        self.im.close()
 
 
 def get_latest_version_info(user, repo) -> VersionInfo:
@@ -86,43 +183,6 @@ def get_version(version: str):
     return tuple(int(i) for i in version.split("."))
 
 
-def update(release_info: ReleaseArchiveInfo, on_update_applied):
-    app_path = os.path.dirname(sys.argv[0])
-
-    if not check_write_access(app_path):
-        return
-
-    update_path = app_path + "_new"
-    parent_path, app_dir = os.path.split(app_path)
-
-    if not check_write_access(parent_path):
-        return
-
-    backup_name = app_dir + "_old"
-    backup_path = app_path + "_old"
-
-    rmdir(update_path)
-    os.mkdir(update_path)
-    print("Download latest release:", release_info.download_link)
-    from pretty_downloader import pretty_downloader
-    release_archive_path = pretty_downloader.download(release_info.download_link, update_path, block_size=8192)
-    unpack_once(release_archive_path, update_path)
-    make_backup(app_path, backup_path, backup_name)
-    shutil.move(os.path.join(os.path.realpath(app_path), backup_name + ".zip"), parent_path)
-
-    if callable(on_update_applied):
-        on_update_applied(
-            update_path,
-            app_path,
-            backup_name + ".zip"
-        )
-
-    if sys.platform == "win32":
-        complete_update_win32(app_path, update_path)
-    else:
-        raise NotImplementedError()
-
-
 def make_backup(origin_path, backup_path, backup_name):
     backup_filename = backup_name + ".zip"
     archive_path = os.path.join(os.path.split(backup_path)[0], backup_filename)
@@ -132,20 +192,6 @@ def make_backup(origin_path, backup_path, backup_name):
     shutil.make_archive(backup_name, "zip", backup_path)
     shutil.rmtree(backup_path)
     return archive_path
-
-
-def complete_update_win32(current_path, new_path):
-    update_script_path = "..\\update.bat"
-    try_remove_file(update_script_path)
-    shutil.move(".\\update.bat", "..\\")
-    import subprocess
-    subprocess.Popen([update_script_path,
-                      os.path.basename(current_path),
-                      os.path.basename(new_path)],
-                     creationflags=subprocess.CREATE_NEW_CONSOLE,
-                     )
-    # Any alternative suggested! here is very bad solution
-    os._exit(0)
 
 
 def unpack_once(filename, extract_dir):

@@ -1,5 +1,7 @@
 import asyncio
 import threading
+from pathlib import Path
+from queue import Queue
 import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task, to_thread
@@ -12,27 +14,23 @@ import inject
 
 class App:
     def __init__(self):
-        from queue import Queue
+        from auto_update import AutoUpdater
         self.config_manager = ConfigFileManager("config")
         self.config = self.config_manager.config
         self.inversion_rules = InversionRulesController()
         self.inversion_rules_file_manager = RulesFileManager("inversion", self.inversion_rules)
         self.state_controller = FilterStateController()
         self.interaction_manager = InteractionManager()
+        self.updater = AutoUpdater()
         inject.configure(self.configure)
         self.callbacks = Queue()
+        self.updater.on_update_applied = self.handle_update
         self.is_running = True
         self.window_switch_listener_thread = [None]
 
     async def run(self):
         from active_window_checker import listen_switch_events
-        from auto_update import check_for_updates
         tasks = []
-        if self.config["update"]["check_for_updates"]:
-            tasks.append(create_task(check_for_updates(
-                self.handle_update,
-                self.config["update"]["ask_before_update"]
-            )))
         tasks.append(create_task(to_thread(
             listen_switch_events,
             self.state_controller.on_active_window_switched,
@@ -46,6 +44,7 @@ class App:
         tasks.append(create_task(
             self.run_callbacks()
         ))
+        self.updater.run_check_loop()
         print("I'm async")
         try:
             await asyncio.gather(*tasks)
@@ -71,7 +70,10 @@ class App:
         for task in asyncio.all_tasks():
             task.cancel()
 
-    def handle_update(self, new_path, current_path, backup_filename):
+    def handle_update(self,
+                      new_path: Path,
+                      current_path: Path,
+                      backup_filename: str):
         try:
             from shutil import copyfile
             from os import path
@@ -234,3 +236,14 @@ class InteractionManager:
         )).run()
         if winfo:
             self.append_current_app(winfo)
+
+    def request_update(self, latest, file_size, response: Queue):
+        from gui import UpdateRequestWindow
+
+        if self.app.redirect_to_main_thread(
+                self.request_update, latest, file_size, response):
+            return
+
+        response.put_nowait(UpdateRequestWindow(
+            latest, file_size
+        ).run())
