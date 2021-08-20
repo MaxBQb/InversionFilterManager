@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import time
 from pathlib import Path
 from queue import Queue
 import color_filter
@@ -30,6 +31,7 @@ class App:
 
     async def run(self):
         from active_window_checker import listen_switch_events
+
         tasks = []
         tasks.append(create_task(to_thread(
             listen_switch_events,
@@ -138,6 +140,7 @@ class FilterStateController:
                                   dwEventThread,
                                   dwmsEventTime):
         from active_window_checker import get_window_info, eventTypes
+
         if idObject != 0:
             return
         result = get_window_info(hwnd)
@@ -160,6 +163,8 @@ class InteractionManager:
         self.tray = Tray()
 
     def setup(self):
+        from win32api import SetConsoleCtrlHandler
+        SetConsoleCtrlHandler(self._process_exit_handler, True)
         initial_hotkey = 'ctrl+alt+'
 
         hotkeys = {
@@ -172,6 +177,13 @@ class InteractionManager:
 
     def close(self):
         self.app.close()
+
+    def _process_exit_handler(self, signal):
+        # Even if main thread busy, tray must be closed
+        self.tray.close()
+        self.close()
+        time.sleep(1)  # Give time for tray to close
+        return True  # Prevent next handler to run
 
     async def run_tray(self):
         try:
