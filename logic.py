@@ -1,12 +1,14 @@
 import asyncio
 import threading
 import time
+from typing import Callable
 from pathlib import Path
-from queue import Queue
+from queue import Queue, PriorityQueue
 import color_filter
 from keyboard import add_hotkey
 from asyncio import create_task, to_thread
 from configobj import ConfigObj
+from dataclasses import dataclass, field
 from active_window_checker import WindowInfo
 from inversion_rules import InversionRulesController
 from realtime_data_sync import ConfigFileManager, RulesFileManager
@@ -24,7 +26,7 @@ class App:
         self.interaction_manager = InteractionManager()
         self.updater = AutoUpdater()
         inject.configure(self.configure)
-        self.callbacks = Queue()
+        self.callbacks: PriorityQueue[App.Callback] = PriorityQueue()
         self.updater.on_update_applied = self.handle_update
         self.is_running = True
         self.window_switch_listener_thread = [None]
@@ -57,12 +59,12 @@ class App:
     async def run_callbacks(self):
         while self.is_running:
             callback = self.callbacks.get()
-            callback()
+            callback.func()
 
     def close(self):
         import win32con
         import win32api
-        if self.redirect_to_main_thread(self.close):
+        if self.redirect_to_main_thread(self.close, priority=0):
             return
         self.is_running = False
         win32api.PostThreadMessage(
@@ -114,12 +116,18 @@ class App:
         for component in components:
             binder.bind(component.__class__, component)
 
-    def redirect_to_main_thread(self, func, *args, **kwargs):
+    def redirect_to_main_thread(self, func, *args, priority=10, **kwargs):
         if threading.current_thread() != threading.main_thread():
-            callback = lambda: func(*args, **kwargs)
+            callback = App.Callback(priority,
+                                    lambda: func(*args, **kwargs))
             self.callbacks.put_nowait(callback)
             return True
         return False
+
+    @dataclass(order=True)
+    class Callback:
+        priority: int
+        func: Callable = field(compare=False)
 
 
 class FilterStateController:
