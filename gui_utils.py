@@ -119,7 +119,7 @@ class BaseNonBlockingWindow:
     def __init__(self):
         self.window: sg.Window = None
         self.layout: list[list] = []
-        self.dependent_windows = set()
+        self.dependent_windows: set[BaseNonBlockingWindow] = set()
 
     def _add_dependency(self, dependent_window):
         self.dependent_windows.add(dependent_window)
