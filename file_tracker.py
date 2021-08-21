@@ -1,8 +1,8 @@
+from contextlib import contextmanager
 from time import time
-from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
-from contextlib import contextmanager
+from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 
 
 class FileTracker:

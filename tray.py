@@ -1,10 +1,9 @@
 from asyncio import to_thread
-
 import inject
 from configobj import ConfigObj
+from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
-from app_close import AppCloseManager
 from realtime_data_sync import RulesFileManager
 from utils import explore
 

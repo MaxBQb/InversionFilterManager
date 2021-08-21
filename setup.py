@@ -1,9 +1,9 @@
-from distutils.core import setup
-import py2exe
 import codecs
 import os.path
+from distutils.core import setup
 from functools import partial
 from glob import glob
+import py2exe
 
 
 def read(rel_path):

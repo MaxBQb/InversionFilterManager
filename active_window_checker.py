@@ -9,21 +9,19 @@ and David Heffernan:
         http://stackoverflow.com/a/15898768/9585
 """
 
-# using pywin32 for constants and ctypes for everything else seems a little
-# indecisive, but whatevs.
+import ctypes
+import ctypes.wintypes
+import sys
+from dataclasses import dataclass
+from functools import cached_property
 import inject
 import win32con
 import win32gui
 import win32process
-from functools import cached_property
-from dataclasses import dataclass
-import sys
-import ctypes
-import ctypes.wintypes
-import color_filter
 from configobj import ConfigObj
-from inversion_rules import InversionRulesController
+import color_filter
 from app_close import AppCloseManager
+from inversion_rules import InversionRulesController
 
 user32 = ctypes.windll.user32
 ole32 = ctypes.windll.ole32

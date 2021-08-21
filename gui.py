@@ -1,24 +1,23 @@
+from os.path import dirname
 import PySimpleGUI as sg
+import inject
 from natsort import os_sorted
+import gui_utils as guitils
+import utils
 from active_window_checker import WindowInfo
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
-from utils import StrHolder, ellipsis_trunc, max_len, change_escape, alternative_path, public_fields
-import gui_utils
-from gui_utils import BaseInteractiveWindow, BaseNonBlockingWindow
-import inject
 from inversion_rules import InversionRule, InversionRulesController, LookForTitle
-from os.path import dirname
 
 
-class RuleCreationWindow(BaseInteractiveWindow):
-    title = gui_utils.get_title("create rule")
+class RuleCreationWindow(guitils.BaseInteractiveWindow):
+    title = guitils.get_title("create rule")
 
-    class TextState(StrHolder):
+    class TextState(utils.StrHolder):
         PLAIN: str
         REGEX: str
         DISABLED: str
 
-    class ID(BaseInteractiveWindow.ID):
+    class ID(guitils.BaseInteractiveWindow.ID):
         BUTTON_TITLE: str
         BUTTON_LOOK_FOR_TITLE: str
         BUTTON_EXCLUSIVE_RULE: str
@@ -51,7 +50,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         ),
     } | path_button_options
 
-    common_options = gui_utils.BUTTON_DEFAULTS | dict(
+    common_options = guitils.BUTTON_DEFAULTS | dict(
         auto_size_button=False
     )
 
@@ -122,7 +121,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
             size=(5, 1)
         )
         self.layout = [
-            [gui_utils.center(sg.Text(
+            [guitils.center(sg.Text(
                 "Here you can choose app, "
                 "windows of which will cause inversion"
             ))],
@@ -135,7 +134,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     tooltip="Name for inversion rule",
                     default_text=name,
                     key=self.ID.INPUT_NAME,
-                    **gui_utils.INPUT_DEFAULTS
+                    **guitils.INPUT_DEFAULTS
                 ),
                 self.exclusive_rule.button,
             ],
@@ -151,7 +150,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     tooltip="Path to program",
                     default_text=self.winfo.path,
                     key=self.ID.INPUT_PATH,
-                    **gui_utils.INPUT_DEFAULTS
+                    **guitils.INPUT_DEFAULTS
                 ),
                 self.path_button.button,
                 sg.InputText(
@@ -163,12 +162,12 @@ class RuleCreationWindow(BaseInteractiveWindow):
                 sg.Button(
                     image_filename="./img/browse.png",
                     tooltip="Browse path (will overwrite current path)",
-                    **gui_utils.ICON_BUTTON_DEFAULTS(),
+                    **guitils.ICON_BUTTON_DEFAULTS(),
                     button_type=sg.BUTTON_TYPE_BROWSE_FILE,
                     target=(sg.ThisRow, -1),
-                    initial_folder=alternative_path(dirname(self.winfo.path)),
+                    initial_folder=utils.alternative_path(dirname(self.winfo.path)),
                     key=self.ID.BUTTON_PATH_BROWSE,
-                    **gui_utils.BUTTON_DEFAULTS
+                    **guitils.BUTTON_DEFAULTS
                 ),
             ],
             [
@@ -184,7 +183,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
                     default_text=self.winfo.title,
                     key=self.ID.INPUT_TITLE,
                     disabled=True,
-                    **gui_utils.INPUT_DEFAULTS
+                    **guitils.INPUT_DEFAULTS
                 ),
                 self.title_button.button,
                 self.look_for_title_button.button,
@@ -199,7 +198,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         )
         for input in inputs:
             self.window[input].Widget.config(
-                **gui_utils.INPUT_EXTRA_DEFAULTS
+                **guitils.INPUT_EXTRA_DEFAULTS
             )
         super().dynamic_build()
 
@@ -272,11 +271,11 @@ class RuleCreationWindow(BaseInteractiveWindow):
             self.path_button.event_handler(event, window, values)
         path = values[self.ID.INPUT_PATH_BROWSED]
         window[self.ID.BUTTON_PATH_BROWSE].InitialFolder = \
-            alternative_path(dirname(path))
+            utils.alternative_path(dirname(path))
         path = normpath(path)
         self.path_ref[0] = path
         window[self.ID.INPUT_PATH].update(path)
-        gui_utils.set_underline(
+        guitils.set_underline(
             window[self.ID.LABEL_PATH],
             False
         )
@@ -305,7 +304,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
         def on_button_switched(event: str,
                                window: sg.Window,
                                values):
-            window[input_id].update(change_escape(
+            window[input_id].update(utils.change_escape(
                 values[input_id],
                 switcher.selected == self.TextState.REGEX
             ))
@@ -322,7 +321,7 @@ class RuleCreationWindow(BaseInteractiveWindow):
             if switcher.selected != self.TextState.REGEX:
                 return
             regex = values[input_id]
-            current_value = change_escape(regex, False)
+            current_value = utils.change_escape(regex, False)
             if current_value != default_value[0]:
                 current_value += '\n' + default_value[0]
             test_regex(regex, current_value)
@@ -330,18 +329,18 @@ class RuleCreationWindow(BaseInteractiveWindow):
         def on_regex_selected(event: str,
                               window: sg.Window,
                               values):
-            gui_utils.set_underline(
+            guitils.set_underline(
                 window[label_id],
                 switcher.selected == self.TextState.REGEX
             )
         return on_text_clicked, on_regex_selected
 
 
-class RuleRemovingWindow(BaseInteractiveWindow):
+class RuleRemovingWindow(guitils.BaseInteractiveWindow):
     all_rules = inject.attr(InversionRulesController)
-    title = gui_utils.get_title("remove rules")
+    title = guitils.get_title("remove rules")
 
-    class ID(BaseInteractiveWindow.ID):
+    class ID(guitils.BaseInteractiveWindow.ID):
         BUTTON_REMOVE_RULE: str
         BUTTON_REMOVE_ALL_RULES: str
         DESCRIPTION: str
@@ -376,7 +375,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
     def build_layout(self):
         pad = 6, 6
 
-        common_switcher_options = gui_utils.BUTTON_DEFAULTS | dict(
+        common_switcher_options = guitils.BUTTON_DEFAULTS | dict(
             pad=pad,
             auto_size_button=False,
         )
@@ -399,7 +398,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
                      " associated with this window:")],
             [sg.Text("Common state:", pad=(0, 0)), self.remove_all_rules_button.button] if not single_rule else [],
             [self.pages.get_pages_holder()],
-            [*self.pages.get_controls(gui_utils.BUTTON_DEFAULTS | dict(
+            [*self.pages.get_controls(guitils.BUTTON_DEFAULTS | dict(
                 pad=pad
             ))]
         ]
@@ -408,10 +407,10 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         rule_buttons = []
         h_pad, v_pad = common_switcher_options['pad']
         for i, name in enumerate(self.rules):
-            self.description_button_keys.append(gui_utils.join_id(self.ID.DESCRIPTION, str(i)))
+            self.description_button_keys.append(guitils.join_id(self.ID.DESCRIPTION, str(i)))
             rule_buttons.append(
                 sg.Button(
-                    ellipsis_trunc(name, width=10),
+                    utils.ellipsis_trunc(name, width=10),
                     font=("Consolas", 10),
                     **(common_switcher_options |
                        dict(pad=((h_pad * 2, h_pad), v_pad))),
@@ -421,7 +420,7 @@ class RuleRemovingWindow(BaseInteractiveWindow):
             )
             self.remove_rule_buttons.append(Switcher(
                 *self.BUTTON_OPTIONS,
-                gui_utils.join_id(self.ID.BUTTON_REMOVE_RULE, str(i)),
+                guitils.join_id(self.ID.BUTTON_REMOVE_RULE, str(i)),
                 common_switcher_options | dict(
                     metadata=name
                 )
@@ -490,10 +489,10 @@ class RuleRemovingWindow(BaseInteractiveWindow):
         self.close()
 
 
-class RuleDescriptionWindow(BaseNonBlockingWindow):
-    title = gui_utils.get_title("rule info")
+class RuleDescriptionWindow(guitils.BaseNonBlockingWindow):
+    title = guitils.get_title("rule info")
 
-    class ID(BaseNonBlockingWindow.ID):
+    class ID(guitils.BaseNonBlockingWindow.ID):
         INPUT: str
 
     def __init__(self, rule: InversionRule, name: str):
@@ -503,10 +502,10 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
         self.inputs: list[str] = None
 
     def build_layout(self):
-        self.layout, self.inputs = gui_utils.layout_from_fields(
+        self.layout, self.inputs = guitils.layout_from_fields(
             dict(name=self.name) | {
                 k: str(v)
-                for k, v in public_fields(self.rule)
+                for k, v in utils.public_fields(self.rule)
                 if v
             },
             self.ID.INPUT
@@ -515,16 +514,16 @@ class RuleDescriptionWindow(BaseNonBlockingWindow):
     def dynamic_build(self):
         for input in self.inputs:
             self.window[input].Widget.config(
-                **gui_utils.INPUT_EXTRA_DEFAULTS
+                **guitils.INPUT_EXTRA_DEFAULTS
             )
         self.inputs = None
         super().dynamic_build()
 
 
-class UpdateRequestWindow(gui_utils.ConfirmationWindow):
-    title = gui_utils.get_title("new release is out!")
+class UpdateRequestWindow(guitils.ConfirmationWindow):
+    title = guitils.get_title("new release is out!")
 
-    class ID(gui_utils.ConfirmationWindow.ID):
+    class ID(guitils.ConfirmationWindow.ID):
         INPUT: str
 
     def __init__(self,
@@ -541,11 +540,11 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
         from hurry.filesize import size, alternative
 
         self.layout = [
-            [gui_utils.center(sg.Text('Update info', font=("Verdana", 18)))]
+            [guitils.center(sg.Text('Update info', font=("Verdana", 18)))]
         ]
 
         if self.developer_mode:
-            self.layout.append([gui_utils.center(sg.Text(
+            self.layout.append([guitils.center(sg.Text(
                 'ATTENTION, YOU ARE IN DEVELOPER MODE',
                 font=("Tahoma", 16, 'bold'),
                 text_color='gold',
@@ -563,11 +562,11 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
             latest_version=self.latest_version,
             release_size=size(self.file_size, alternative),
         )
-        label_size = (max_len(description.keys()) + 1, 1)
-        input_size = (max_len(description.values()) + 4, 1)
-        font = gui_utils.INPUT_DEFAULTS['font']
+        label_size = (utils.max_len(description.keys()) + 1, 1)
+        input_size = (utils.max_len(description.values()) + 4, 1)
+        font = guitils.INPUT_DEFAULTS['font']
         self.inputs = [
-            gui_utils.join_id(self.ID.INPUT, name)
+            guitils.join_id(self.ID.INPUT, name)
             for name in description
         ]
         self.layout += [
@@ -582,7 +581,7 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
                  readonly=True,
                  key=input_key,
                  size=input_size,
-                 **gui_utils.INPUT_DEFAULTS
+                 **guitils.INPUT_DEFAULTS
              )]
             for (label, content), input_key in zip(description.items(), self.inputs)
         ]
@@ -591,16 +590,16 @@ class UpdateRequestWindow(gui_utils.ConfirmationWindow):
     def dynamic_build(self):
         for input in self.inputs:
             self.window[input].Widget.config(
-                **gui_utils.INPUT_EXTRA_DEFAULTS
+                **guitils.INPUT_EXTRA_DEFAULTS
             )
         self.inputs = None
         super().dynamic_build()
 
 
-class ChooseRuleCandidateWindow(BaseInteractiveWindow):
-    title = gui_utils.get_title("select rule candidate")
+class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
+    title = guitils.get_title("select rule candidate")
 
-    class ID(BaseInteractiveWindow.ID):
+    class ID(guitils.BaseInteractiveWindow.ID):
         DESCRIPTION: str
         LIST_NAMES: str
 
@@ -619,8 +618,8 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
 
     @staticmethod
     def _get_name(winfo):
-        name = ellipsis_trunc(winfo.name, 18)
-        title = ellipsis_trunc(winfo.title, 18)
+        name = utils.ellipsis_trunc(winfo.name, 18)
+        title = utils.ellipsis_trunc(winfo.title, 18)
         if title:
             return f"{name} '{title}'"
         return name
@@ -631,29 +630,29 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
             for winfo in self.windows_info
         }
         names = list(self.name_to_winfo_map.keys())
-        name_max_len = max_len(names)+1
+        name_max_len = utils.max_len(names) + 1
         self.layout += [
             [sg.Listbox(
                 names,
                 select_mode=sg.LISTBOX_SELECT_MODE_BROWSE,
                 default_values=[names[0]],
-                font=gui_utils.INPUT_DEFAULTS["font"],
+                font=guitils.INPUT_DEFAULTS["font"],
                 size=(name_max_len, 3),
                 enable_events=True,
                 key=self.ID.LIST_NAMES,
-                **gui_utils.LIST_BOX_DEFAULTS,
+                **guitils.LIST_BOX_DEFAULTS,
             )],
         ]
 
         max_text_len = max(
-            max_len(
-                str(v) for k, v in public_fields(winfo)
+            utils.max_len(
+                str(v) for k, v in utils.public_fields(winfo)
             )
             for winfo in self.windows_info
         )
         max_text_len = min(40,  max(20, max_text_len+1))
-        layout, self.inputs = gui_utils.layout_from_fields(
-            public_fields(self.selected_window),
+        layout, self.inputs = guitils.layout_from_fields(
+            utils.public_fields(self.selected_window),
             self.ID.DESCRIPTION,
             content_kwargs=dict(size=(max_text_len, 1))
         )
@@ -662,7 +661,7 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
             k: input_id
             for input_id, (k, v) in zip(
                 self.inputs,
-                public_fields(self.selected_window)
+                utils.public_fields(self.selected_window)
             )
         }
 
@@ -679,7 +678,7 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
                     values):
         winfo = self.name_to_winfo_map[values[event][0]]
         self.selected_window = winfo
-        for field, value in public_fields(winfo):
+        for field, value in utils.public_fields(winfo):
             input_id = self.property_to_id_map[field]
             window[input_id].update(str(value))
 
@@ -694,7 +693,7 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
         })
         for input in self.inputs:
             self.window[input].Widget.config(
-                **gui_utils.INPUT_EXTRA_DEFAULTS
+                **guitils.INPUT_EXTRA_DEFAULTS
             )
         self.inputs = None
         self.window[self.ID.LIST_NAMES].set_focus()
@@ -709,7 +708,7 @@ class ChooseRuleCandidateWindow(BaseInteractiveWindow):
 
 
 class ChooseRemoveCandidateWindow(ChooseRuleCandidateWindow):
-    title = gui_utils.get_title("select window -> remove rules")
+    title = guitils.get_title("select window -> remove rules")
 
     def build_layout(self):
         self.layout = [
@@ -724,7 +723,7 @@ class ChooseRemoveCandidateWindow(ChooseRuleCandidateWindow):
 
 
 class ChooseAppendCandidateWindow(ChooseRuleCandidateWindow):
-    title = gui_utils.get_title("select window -> create rule")
+    title = guitils.get_title("select window -> create rule")
 
     def build_layout(self):
         self.layout = [

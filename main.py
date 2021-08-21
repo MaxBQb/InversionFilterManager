@@ -1,7 +1,7 @@
-import inject
-from logic import App
 from asyncio import run
+import inject
 from bootstrap import try_request_admin_rights
+from logic import App
 
 
 @inject.autoparams()

@@ -1,7 +1,8 @@
-from re import compile
 from dataclasses import dataclass
 from enum import Enum, auto
+from re import compile
 from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from active_window_checker import WindowInfo

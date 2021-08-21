@@ -1,7 +1,7 @@
+import threading
 from dataclasses import dataclass, field
 from queue import PriorityQueue
 from typing import Callable
-import threading
 import inject
 
 

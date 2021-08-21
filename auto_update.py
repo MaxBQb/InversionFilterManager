@@ -1,14 +1,14 @@
 import os
-import sys
 import shutil
-import inject
-from time import sleep
-from queue import Queue
-from pathlib import Path
-from configobj import ConfigObj
-from interaction import InteractionManager
+import sys
 from dataclasses import dataclass
+from pathlib import Path
+from queue import Queue
+from time import sleep
+import inject
+from configobj import ConfigObj
 from app_close import AppCloseManager
+from interaction import InteractionManager
 
 
 @dataclass

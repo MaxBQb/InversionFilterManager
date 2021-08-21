@@ -1,7 +1,9 @@
-import PySimpleGUI as sg
 from functools import cached_property
-from utils import rename_key, cycled_shift, StrHolder, max_len
 from typing import TypeVar, Generic, Any
+import PySimpleGUI as sg
+from utils import rename_key, cycled_shift, StrHolder, max_len
+
+
 T = TypeVar('T')
 OPTIONS = dict[str, Any]
 

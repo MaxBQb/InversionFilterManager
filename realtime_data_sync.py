@@ -1,8 +1,8 @@
-from file_tracker import FileTracker
-from configobj import ConfigObj
-from inversion_rules import InversionRulesController, InversionRule, RULES
 import jsons
 import yaml
+from configobj import ConfigObj
+from file_tracker import FileTracker
+from inversion_rules import InversionRulesController, InversionRule, RULES
 
 
 class ConfigFileManager(FileTracker):

@@ -1,5 +1,5 @@
-from winregal import RegKey
 from keyboard import press_and_release as hotkey
+from winregal import RegKey
 
 
 def is_active():

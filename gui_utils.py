@@ -1,5 +1,5 @@
-import PySimpleGUI as sg
 from typing import Callable, Any
+import PySimpleGUI as sg
 from _meta import __product_name__ as app_name
 from utils import StrHolder, max_len
 

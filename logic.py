@@ -1,16 +1,16 @@
 import asyncio
-from pathlib import Path
 from asyncio import create_task, to_thread
+from pathlib import Path
+import inject
 from configobj import ConfigObj
 from active_window_checker import FilterStateController
+from app_close import AppCloseManager
+from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
-from realtime_data_sync import ConfigFileManager, RulesFileManager
-from auto_update import AutoUpdater
 from main_thread_loop import MainExecutor
-from app_close import AppCloseManager
+from realtime_data_sync import ConfigFileManager, RulesFileManager
 from tray import Tray
-import inject
 
 
 class App:

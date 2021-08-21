@@ -1,8 +1,8 @@
 import asyncio
 import time
 from typing import Callable
-from win32con import WM_QUIT
 import win32api
+from win32con import WM_QUIT
 from main_thread_loop import execute_in_main_thread
 
 

@@ -1,6 +1,8 @@
-import re
 import os
+import re
 import subprocess
+
+
 FILEBROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
 
 
