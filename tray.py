@@ -1,5 +1,8 @@
 from asyncio import to_thread
 import inject
+import win32gui
+from win32con import SW_HIDE, SW_SHOW
+import win32console
 from PIL import Image
 from configobj import ConfigObj
 from pystray import Menu, MenuItem, Icon
@@ -11,6 +14,25 @@ from realtime_data_sync import RulesFileManager
 from utils import explore
 
 
+def make_toggle(out_func=None, default_value=False):
+    def decorator(func):
+        def wrapper(self):
+            value = [default_value]
+
+            def get_value(item):
+                return value[0]
+
+            def toggle():
+                value[0] ^= True
+                func(self, value[0])
+
+            return toggle, get_value
+        return wrapper
+    if out_func:
+        return decorator(out_func)
+    return decorator
+
+
 class Tray:
     config = inject.attr(ConfigObj)
     rules_file_manager = inject.attr(RulesFileManager)
@@ -20,17 +42,24 @@ class Tray:
 
     def __init__(self):
         self.tray = None
+        self.console_hwnd: int = None
+        self.console_shown = False
 
     def setup(self):
         self.close_manager.add_exit_handler(self.close)
+        self.console_hwnd = win32console.GetConsoleWindow()
+        win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
 
     def run(self):
-        self.tray = Icon(
-            app.__product_name__,
-            Image.open(app.__icon__),
-            menu=self.build_menu()
-        )
-        self.tray.run()
+        try:
+            self.tray = Icon(
+                app.__product_name__,
+                Image.open(app.__icon__),
+                menu=self.build_menu()
+            )
+            self.tray.run()
+        except Exception as e:
+            pass
 
     async def run_async(self):
         try:
@@ -67,6 +96,11 @@ class Tray:
                 None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(
+                ref("Show console"),
+                *self.toggle_console()
+            ),
+            Menu.SEPARATOR,
+            MenuItem(
                 ref('Open'),
                 Menu(
                     MenuItem(ref('Work directory'),
@@ -88,4 +122,11 @@ class Tray:
             Menu.SEPARATOR,
             MenuItem(ref('Exit'),
                      callback(self.close_manager.close)),
+        )
+
+    @make_toggle
+    def toggle_console(self, value):
+        win32gui.ShowWindow(
+            self.console_hwnd,
+            SW_SHOW if value else SW_HIDE
         )

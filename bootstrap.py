@@ -29,10 +29,11 @@ ERRORS = {
 
 def request_admin_rights() -> bool:
     # msdn.microsoft.com/en-us/library/windows/desktop/bb762153(v=vs.85).aspx
+    from win32con import SW_HIDE
     if shell.IsUserAnAdmin():
         return False
     hinstance = shell.ShellExecuteW(
-        None, 'runas', sys.executable, sys.argv[0], None, 1
+        None, 'runas', sys.executable, sys.argv[0], None, SW_HIDE
     )
     if hinstance <= 32:
         raise RuntimeError(ERRORS.get(hinstance, f"{hinstance}: Unknown error"))
