@@ -1,7 +1,10 @@
 from re import compile
 from dataclasses import dataclass
-from active_window_checker import WindowInfo
 from enum import Enum, auto
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from active_window_checker import WindowInfo
 
 
 class LookForTitle(Enum):
@@ -43,13 +46,13 @@ class InversionRule:
         self._title_regex = try_compile(self.title_regex)
         self._path_regex = try_compile(self.path_regex)
 
-    def is_active(self, info: WindowInfo) -> bool:
+    def is_active(self, info: 'WindowInfo') -> bool:
         return self.check_path(info) and self.check_title(info)
 
-    def check_path(self, info: WindowInfo):
+    def check_path(self, info: 'WindowInfo'):
         return check_text(info.path, self.path, self._path_regex)
 
-    def check_title(self, info: WindowInfo):
+    def check_title(self, info: 'WindowInfo'):
         if not self._check_title:
             return True
         if self.look_for_title == LookForTitle.ANY:
@@ -107,17 +110,17 @@ class InversionRulesController:
     def on_modified(self):
         pass
 
-    def is_inversion_required(self, info: WindowInfo):
+    def is_inversion_required(self, info: 'WindowInfo'):
         return (
             self.has_active_rules(info, self.included) and
             not self.has_active_rules(info, self.excluded)
         )
 
-    def has_active_rules(self, info: WindowInfo, rules: RULES):
+    def has_active_rules(self, info: 'WindowInfo', rules: RULES):
         return next(self.get_active_rules(info, rules), None) is not None
 
     @staticmethod
-    def get_active_rules(info: WindowInfo, rules: RULES):
+    def get_active_rules(info: 'WindowInfo', rules: RULES):
         return (name for name in rules
                 if rules[name].is_active(info))
 
