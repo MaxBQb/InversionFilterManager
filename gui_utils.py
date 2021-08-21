@@ -35,6 +35,11 @@ INPUT_EXTRA_DEFAULTS = dict(
 
 def init_theme():
     sg.theme("DarkGray13")
+    sg.set_options(
+        titlebar_icon="img/inversion_manager.png",
+        titlebar_font=("Tahoma", 12),
+        icon="img/inversion_manager.png",
+    )
 
 
 def get_title(title: str):
@@ -148,10 +153,7 @@ class BaseNonBlockingWindow:
     def add_title(self, **kwargs):
         self.layout.insert(0, [sg.Titlebar(
             title=self.title,
-            **(dict(
-                icon="img/inversion_manager.png",
-                font=("Tahoma", 12)
-            ) | kwargs)
+            **kwargs
         )])
 
     def add_submit_button(self, **kwargs):

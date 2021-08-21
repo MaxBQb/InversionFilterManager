@@ -6,9 +6,7 @@ from logic import App
 
 @inject.autoparams()
 async def main(app: App):
-    from gui_utils import init_theme
     print('Hi, there!')
-    init_theme()
     app.setup()
     await app.run()
 

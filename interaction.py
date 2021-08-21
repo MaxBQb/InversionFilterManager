@@ -2,6 +2,7 @@ from queue import Queue
 import inject
 import keyboard
 import gui
+import gui_utils
 from active_window_checker import FilterStateController, WindowInfo
 from inversion_rules import InversionRulesController
 from main_thread_loop import execute_in_main_thread
@@ -12,6 +13,7 @@ class InteractionManager:
     rules_controller = inject.attr(InversionRulesController)
 
     def setup(self):
+        gui_utils.init_theme()
         initial_hotkey = 'ctrl+alt+'
 
         hotkeys = {
