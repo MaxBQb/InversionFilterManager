@@ -38,20 +38,52 @@ class AutoUpdater:
         from datetime import timedelta
         self.delay = timedelta(days=1).total_seconds()
         self.response = Queue()
+        # carry-on baggage is list of filenames
+        # moved to new location on update
+        self.carryon: list[str] = []
         self.developer_mode = sys.argv[0].endswith(".py")
         if not self.developer_mode:
             self.thread = Thread(
                 name="Update Checker",
-                target=self.check_loop,
+                target=self._run_check_loop,
                 daemon=True
             )
         self.update_in_progress = False
+
+    def move_on_update(self, filename):
+        self.carryon.append(filename)
+
+    def _move_carryon(self,
+                      current_path: Path,
+                      new_path: Path):
+        if not self.carryon:
+            return
+
+        from shutil import copyfile
+        from os import path
+
+        for filename in self.carryon:
+            current_file_path = path.join(current_path, filename)
+            new_file_path = path.join(new_path, filename)
+            if path.exists(current_file_path):
+                if not path.exists(new_file_path):
+                    copyfile(current_file_path, new_file_path)
+                else:
+                    print(f"Skip {filename}: update contains same file")
+            else:
+                print(f"Skip {filename}: no such file")
 
     def on_update_applied(self,
                           new_path: Path,
                           current_path: Path,
                           backup_filename: str):
-        pass
+        try:
+            self._move_carryon(current_path, new_path)
+        except Exception as e:
+            print("Failed to copy previous version data:", e)
+            print("You may do this manually, from", backup_filename)
+            print("Files to copy:", self.carryon)
+            input("Press enter to continue update")
 
     def run_check_loop(self):
         if self.developer_mode:
@@ -59,7 +91,7 @@ class AutoUpdater:
         self.thread.start()
         return self.thread
 
-    def check_loop(self):
+    def _run_check_loop(self):
         while True:
             if self.config["update"]["check_for_updates"]:
                 self.check_for_updates()

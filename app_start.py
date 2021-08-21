@@ -17,6 +17,7 @@ class AppStartManager:
     updater = inject.attr(AutoUpdater)
     state_controller = inject.attr(FilterStateController)
     interaction_manager = inject.attr(InteractionManager)
+    config_file_manager = inject.attr(ConfigFileManager)
     config = inject.attr(ConfigObj)
     inversion_rules_file_manager = inject.attr(RulesFileManager)
     main_executor = inject.attr(MainExecutor)
@@ -25,7 +26,8 @@ class AppStartManager:
 
     def setup(self):
         self.close_manager.setup()
-        self.updater.on_update_applied = self.handle_update
+        self.config_file_manager.setup()
+        self.inversion_rules_file_manager.setup()
         self.interaction_manager.setup()
         self.tray.setup()
 
@@ -55,40 +57,12 @@ class AppStartManager:
             pass
         print("Bye")
 
-    def handle_update(self,
-                      new_path: Path,
-                      current_path: Path,
-                      backup_filename: str):
-        try:
-            from shutil import copyfile
-            from os import path
-
-            copy_list = [
-                self.config.filename,
-                self.inversion_rules_file_manager.filename
-            ]
-
-            for filename in copy_list:
-                current_file_path = path.join(current_path, filename)
-                new_file_path = path.join(new_path, filename)
-                if path.exists(current_file_path):
-                    if not path.exists(new_file_path):
-                        copyfile(current_file_path, new_file_path)
-                    else:
-                        print(f"Skip {filename}: update contains same file")
-                else:
-                    print(f"Skip {filename}: no such file")
-
-        except Exception as e:
-            print("Failed to copy previous version data:", e)
-            print("You may do this manually, from", backup_filename)
-            print("Files to copy:", copy_list)
-
 
 def configure(binder: inject.Binder):
     # Couple of components
     # Handled at runtime
     config_manager = ConfigFileManager("config")
+    binder.bind(ConfigFileManager, config_manager)
     binder.bind(ConfigObj, config_manager.config)
 
     inversion_rules = InversionRulesController()

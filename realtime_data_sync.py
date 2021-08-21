@@ -1,17 +1,24 @@
+import inject
 import jsons
 import yaml
 from configobj import ConfigObj
 from file_tracker import FileTracker
 from inversion_rules import InversionRulesController, InversionRule, RULES
+from auto_update import AutoUpdater
 
 
 class ConfigFileManager(FileTracker):
+    updater = inject.attr(AutoUpdater)
+
     def __init__(self, name: str):
         self.config = ConfigObj(infile=name + ".ini",
                                 configspec=name + "_description.ini",
                                 create_empty=True,
                                 write_empty_values=True)
         super().__init__(self.config.filename)
+
+    def setup(self):
+        self.updater.move_on_update(self.filename)
 
     def load_file(self):
         self.validate_config()
@@ -60,11 +67,16 @@ class ConfigFileManager(FileTracker):
 
 
 class RulesFileManager(FileTracker):
+    updater = inject.attr(AutoUpdater)
+
     def __init__(self, name: str, rules_controller: InversionRulesController):
         self.rules: RULES = None
         self.rules_controller = rules_controller
         self.rules_controller.on_modified = self.save_rules
         super().__init__(name + "_rules.yaml")
+
+    def setup(self):
+        self.updater.move_on_update(self.filename)
 
     def load_file(self):
         try:
