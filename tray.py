@@ -51,15 +51,12 @@ class Tray:
         win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
 
     def run(self):
-        try:
-            self.tray = Icon(
-                app.__product_name__,
-                Image.open(app.__icon__),
-                menu=self.build_menu()
-            )
-            self.tray.run()
-        except Exception as e:
-            pass
+        self.tray = Icon(
+            app.__product_name__,
+            Image.open(app.__icon__),
+            menu=self.build_menu()
+        )
+        self.tray.run()
 
     async def run_async(self):
         try:
