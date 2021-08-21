@@ -1,27 +1,9 @@
-import codecs
 import os.path
 from distutils.core import setup
-from functools import partial
 from glob import glob
 import py2exe
+import _meta as app
 
-
-def read(rel_path):
-    here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
-        return fp.read()
-
-
-def get_entry(rel_path, key):
-    for line in read(rel_path).splitlines():
-        if line.startswith(key):
-            delim = '"' if '"' in line else "'"
-            return line.split(delim)[1]
-    else:
-        raise RuntimeError(f"Unable to find {key} string.")
-
-
-get_meta = partial(get_entry, './_meta.py')
 
 # py2exe says 'site' package unavailable for windows => useless
 # but somewhat I've got import error without next line
@@ -47,11 +29,11 @@ dirty_pystray_fix()
 
 setup(console=[dict(
         script='main.py',
-        icon_resources=[(0, get_meta('__icon__'))],
+        icon_resources=[(0, app.__icon__)],
       )],
-      name=get_meta('__product_name__'),
-      version=get_meta('__version__'),
-      author=get_meta('__author__'),
+      name=app.__product_name__,
+      version=app.__version__,
+      author=app.__author__,
       description="Inverts colors when you opens blinding white windows",
       data_files=[('.', ["config_description.ini", "update.bat"]),
                   ('./img', glob('img/*'))],
