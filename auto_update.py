@@ -6,8 +6,9 @@ from time import sleep
 from queue import Queue
 from pathlib import Path
 from configobj import ConfigObj
-from logic import InteractionManager
+from interaction import InteractionManager
 from dataclasses import dataclass
+from app_close import AppCloseManager
 
 
 @dataclass
@@ -30,6 +31,7 @@ class VersionInfo:
 class AutoUpdater:
     config = inject.attr(ConfigObj)
     im = inject.attr(InteractionManager)
+    close_manager = inject.attr(AppCloseManager)
 
     def __init__(self):
         from threading import Thread
@@ -152,7 +154,7 @@ class AutoUpdater:
                 os.path.basename(new_path)
             ], creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
-        self.im.close()
+        self.close_manager.close()
 
 
 def get_latest_version_info(user, repo) -> VersionInfo:

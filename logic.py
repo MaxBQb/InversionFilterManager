@@ -1,35 +1,33 @@
 import asyncio
-import threading
-import time
-from typing import Callable
 from pathlib import Path
-from queue import Queue, PriorityQueue
-import color_filter
-from keyboard import add_hotkey
 from asyncio import create_task, to_thread
 from configobj import ConfigObj
-from dataclasses import dataclass, field
-from active_window_checker import WindowInfo
+from active_window_checker import FilterStateController
+from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from realtime_data_sync import ConfigFileManager, RulesFileManager
+from auto_update import AutoUpdater
+from main_thread_loop import MainExecutor
+from app_close import AppCloseManager
+from tray import Tray
 import inject
 
 
 class App:
-    def __init__(self):
-        from auto_update import AutoUpdater
-        self.config_manager = ConfigFileManager("config")
-        self.config = self.config_manager.config
-        self.inversion_rules = InversionRulesController()
-        self.inversion_rules_file_manager = RulesFileManager("inversion", self.inversion_rules)
-        self.state_controller = FilterStateController()
-        self.interaction_manager = InteractionManager()
-        self.updater = AutoUpdater()
-        inject.configure(self.configure)
-        self.callbacks: PriorityQueue[App.Callback] = PriorityQueue()
+    updater = inject.attr(AutoUpdater)
+    state_controller = inject.attr(FilterStateController)
+    interaction_manager = inject.attr(InteractionManager)
+    config = inject.attr(ConfigObj)
+    inversion_rules_file_manager = inject.attr(RulesFileManager)
+    main_executor = inject.attr(MainExecutor)
+    close_manager = inject.attr(AppCloseManager)
+    tray = inject.attr(Tray)
+
+    def setup(self):
+        self.close_manager.setup()
         self.updater.on_update_applied = self.handle_update
-        self.is_running = True
-        self.window_switch_listener_thread = [None]
+        self.interaction_manager.setup()
+        self.tray.setup()
 
     async def run(self):
         from active_window_checker import listen_switch_events
@@ -37,42 +35,25 @@ class App:
         tasks = []
         tasks.append(create_task(to_thread(
             listen_switch_events,
-            self.state_controller.on_active_window_switched,
-            self.window_switch_listener_thread
+            self.state_controller.on_active_window_switched
         )))
 
-        self.interaction_manager.setup()
         tasks.append(create_task(
-            self.interaction_manager.run_tray()
+            self.tray.run_async()
         ))
+
         tasks.append(create_task(
-            self.run_callbacks()
+            self.main_executor.run_loop()
         ))
+
         self.updater.run_check_loop()
+
         print("I'm async")
         try:
             await asyncio.gather(*tasks)
         except asyncio.exceptions.CancelledError:
             pass
         print("Bye")
-
-    async def run_callbacks(self):
-        while self.is_running:
-            callback = self.callbacks.get()
-            callback.func()
-
-    def close(self):
-        import win32con
-        import win32api
-        if self.redirect_to_main_thread(self.close, priority=0):
-            return
-        self.is_running = False
-        win32api.PostThreadMessage(
-            self.window_switch_listener_thread[0],
-            win32con.WM_QUIT, 0, 0
-        )
-        for task in asyncio.all_tasks():
-            task.cancel()
 
     def handle_update(self,
                       new_path: Path,
@@ -103,177 +84,17 @@ class App:
             print("You may do this manually, from", backup_filename)
             print("Files to copy:", copy_list)
 
-    def configure(self, binder: inject.Binder):
-        components = (
-            self.config,
-            self.inversion_rules,
-            self.inversion_rules_file_manager,
-            self.state_controller,
-            self.interaction_manager,
-            self.updater,
-            self,
-        )
-        for component in components:
-            binder.bind(component.__class__, component)
 
-    def redirect_to_main_thread(self, func, *args, priority=10, **kwargs):
-        if threading.current_thread() != threading.main_thread():
-            callback = App.Callback(priority,
-                                    lambda: func(*args, **kwargs))
-            self.callbacks.put_nowait(callback)
-            return True
-        return False
+def configure(binder: inject.Binder):
+    # Couple of components
+    # Handled at runtime
+    config_manager = ConfigFileManager("config")
+    binder.bind(ConfigObj, config_manager.config)
 
-    @dataclass(order=True)
-    class Callback:
-        priority: int
-        func: Callable = field(compare=False)
+    inversion_rules = InversionRulesController()
+    inversion_rules_file_manager = RulesFileManager("inversion", inversion_rules)
+    binder.bind(InversionRulesController, inversion_rules)
+    binder.bind(RulesFileManager, inversion_rules_file_manager)
 
 
-class FilterStateController:
-    config = inject.attr(ConfigObj)
-    rules = inject.attr(InversionRulesController)
-
-    def __init__(self):
-        from collections import deque
-        self.last_active_windows = deque(maxlen=10)
-        self.last_active_window = None
-
-    def on_active_window_switched(self,
-                                  hWinEventHook,
-                                  event,
-                                  hwnd,
-                                  idObject,
-                                  idChild,
-                                  dwEventThread,
-                                  dwmsEventTime):
-        from active_window_checker import get_window_info, eventTypes
-
-        if idObject != 0:
-            return
-        result = get_window_info(hwnd)
-        if not result:
-            return
-        winfo = self.last_active_window = result
-        self.last_active_windows.append(winfo)
-        if self.config["display"]["show_events"]:
-            print(winfo.path, eventTypes.get(event, hex(event)))
-        color_filter.set_active(self.rules.is_inversion_required(winfo))
-
-
-class InteractionManager:
-    state_controller = inject.attr(FilterStateController)
-    rules_controller = inject.attr(InversionRulesController)
-    app = inject.attr(App)
-
-    def __init__(self):
-        from gui import Tray
-        self.tray = Tray()
-
-    def setup(self):
-        from win32api import SetConsoleCtrlHandler
-        SetConsoleCtrlHandler(self._process_exit_handler, True)
-        initial_hotkey = 'ctrl+alt+'
-
-        hotkeys = {
-            'plus': self.append_current_app,
-            'subtract': self.delete_current_app,
-        }
-
-        for k, v in hotkeys.items():
-            add_hotkey(initial_hotkey + k, v)
-
-    def close(self):
-        self.app.close()
-
-    def _process_exit_handler(self, signal):
-        # Even if main thread busy, tray must be closed
-        self.tray.close()
-        self.close()
-        time.sleep(1)  # Give time for tray to close
-        return True  # Prevent next handler to run
-
-    async def run_tray(self):
-        try:
-            await to_thread(self.tray.run)
-        finally:
-            self.tray.close()
-
-    def append_current_app(self, winfo: WindowInfo = None):
-        from gui import RuleCreationWindow
-
-        if self.app.redirect_to_main_thread(
-                self.append_current_app):
-            return
-
-        winfo = winfo or self.state_controller.last_active_window
-        if not winfo:
-            return
-        rule, name = RuleCreationWindow(winfo).run()
-        if name is not None and rule:
-            self.rules_controller.add_rule(name, rule)
-
-    def delete_current_app(self, winfo: WindowInfo = None):
-        from gui import RuleRemovingWindow
-
-        if self.app.redirect_to_main_thread(
-                self.delete_current_app):
-            return
-
-        winfo = winfo or self.state_controller.last_active_window
-        if not winfo:
-            return
-        if not self.rules_controller.is_inversion_required(winfo):
-            return
-
-        rules = RuleRemovingWindow(list(
-            self.rules_controller.get_active_rules(winfo, self.rules_controller.rules)
-        )).run()
-        if rules:
-            self.rules_controller.remove_rules(rules)
-
-    def choose_window_to_remove_rules(self):
-        from gui import ChooseRemoveCandidateWindow
-
-        if self.app.redirect_to_main_thread(
-                self.choose_window_to_remove_rules):
-            return
-
-        if not self.state_controller.last_active_window:
-            return
-        winfo = ChooseRemoveCandidateWindow(list(
-            self.state_controller.last_active_windows
-        )).run()
-        if winfo:
-            self.delete_current_app(winfo)
-
-    def choose_window_to_make_rule(self):
-        from gui import ChooseAppendCandidateWindow
-
-        if self.app.redirect_to_main_thread(
-                self.choose_window_to_make_rule):
-            return
-
-        if not self.state_controller.last_active_window:
-            return
-        winfo = ChooseAppendCandidateWindow(list(
-            self.state_controller.last_active_windows
-        )).run()
-        if winfo:
-            self.append_current_app(winfo)
-
-    def request_update(self,
-                       latest,
-                       file_size,
-                       developer_mode: bool,
-                       response: Queue):
-        from gui import UpdateRequestWindow
-
-        if self.app.redirect_to_main_thread(
-                self.request_update, latest,
-                file_size, developer_mode, response):
-            return
-
-        response.put_nowait(UpdateRequestWindow(
-            latest, file_size, developer_mode
-        ).run())
+inject.configure(configure)

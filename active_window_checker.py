@@ -11,7 +11,7 @@ and David Heffernan:
 
 # using pywin32 for constants and ctypes for everything else seems a little
 # indecisive, but whatevs.
-import win32api
+import inject
 import win32con
 import win32gui
 import win32process
@@ -20,6 +20,10 @@ from dataclasses import dataclass
 import sys
 import ctypes
 import ctypes.wintypes
+import color_filter
+from configobj import ConfigObj
+from inversion_rules import InversionRulesController
+from app_close import AppCloseManager
 
 user32 = ctypes.windll.user32
 ole32 = ctypes.windll.ole32
@@ -170,7 +174,8 @@ def titles(iterable):
         yield win32gui.GetWindowText(hwnd)
 
 
-def listen_switch_events(callback, out_thread_id):
+@inject.autoparams()
+def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoInitialize(0)
 
     WinEventProc = WinEventProcType(callback)
@@ -181,9 +186,40 @@ def listen_switch_events(callback, out_thread_id):
         print('SetWinEventHook failed')
         sys.exit(1)
 
-    out_thread_id[0] = win32api.GetCurrentThreadId()
+    close_manager.append_blocked_thread()
     win32gui.PumpMessages()
 
     for hookID in hookIDs:
         user32.UnhookWinEvent(hookID)
     ole32.CoUninitialize()
+
+
+class FilterStateController:
+    config = inject.attr(ConfigObj)
+    rules = inject.attr(InversionRulesController)
+
+    def __init__(self):
+        from collections import deque
+        self.last_active_windows = deque(maxlen=10)
+        self.last_active_window = None
+
+    def on_active_window_switched(self,
+                                  hWinEventHook,
+                                  event,
+                                  hwnd,
+                                  idObject,
+                                  idChild,
+                                  dwEventThread,
+                                  dwmsEventTime):
+        from active_window_checker import get_window_info, eventTypes
+
+        if idObject != 0:
+            return
+        result = get_window_info(hwnd)
+        if not result:
+            return
+        winfo = self.last_active_window = result
+        self.last_active_windows.append(winfo)
+        if self.config["display"]["show_events"]:
+            print(winfo.path, eventTypes.get(event, hex(event)))
+        color_filter.set_active(self.rules.is_inversion_required(winfo))
