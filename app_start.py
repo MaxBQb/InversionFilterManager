@@ -13,7 +13,7 @@ from realtime_data_sync import ConfigFileManager, RulesFileManager
 from tray import Tray
 
 
-class App:
+class AppStartManager:
     updater = inject.attr(AutoUpdater)
     state_controller = inject.attr(FilterStateController)
     interaction_manager = inject.attr(InteractionManager)

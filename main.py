@@ -1,11 +1,11 @@
 from asyncio import run
 import inject
 from bootstrap import try_request_admin_rights
-from logic import App
+from app_start import AppStartManager
 
 
 @inject.autoparams()
-async def main(app: App):
+async def main(app: AppStartManager):
     print('Hi, there!')
     app.setup()
     await app.run()
