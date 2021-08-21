@@ -45,7 +45,10 @@ def dirty_pystray_fix():
 dirty_pystray_fix()
 
 
-setup(console=['main.py'],
+setup(console=[dict(
+        script='main.py',
+        icon_resources=[(0, get_meta('__icon__'))],
+      )],
       name=get_meta('__product_name__'),
       version=get_meta('__version__'),
       author=get_meta('__author__'),

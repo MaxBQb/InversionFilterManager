@@ -1,6 +1,9 @@
 from asyncio import to_thread
 import inject
+from PIL import Image
 from configobj import ConfigObj
+from pystray import Menu, MenuItem, Icon
+import _meta as app
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
@@ -22,12 +25,9 @@ class Tray:
         self.close_manager.add_exit_handler(self.close)
 
     def run(self):
-        from _meta import __product_name__
-        from pystray import Icon
-        from PIL import Image
         self.tray = Icon(
-            __product_name__,
-            Image.open("img/inversion_manager.ico"),
+            app.__product_name__,
+            Image.open(app.__icon__),
             menu=self.build_menu()
         )
         self.tray.run()
@@ -43,9 +43,6 @@ class Tray:
             self.tray.stop()
 
     def build_menu(self):
-        from pystray import Menu, MenuItem
-        import _meta as app
-
         def callback(func, *args, **kwargs):
             def _wrapper(*ignore):
                 func(*args, **kwargs)
