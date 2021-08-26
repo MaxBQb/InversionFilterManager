@@ -13,10 +13,10 @@ T = TypeVar('T')
 
 
 class DataFileSyncer(FileTracker, Generic[T]):
-    def __init__(self, filename: str, data: T):
+    def __init__(self, filename: str, data: T, data_type=None):
         self._data: T = None
         self.data = data
-        self._class = type(data)
+        self._class = data_type or type(data)
         super().__init__(filename + ".yaml")
 
     @property
@@ -76,49 +76,37 @@ class ConfigSyncer(DataFileSyncer):
         writer.dump(stream, get_comments_holder(self._class))
 
 
-class RulesFileManager(FileTracker):
+class RulesSyncer(DataFileSyncer):
     updater = inject.attr(AutoUpdater)
 
     def __init__(self, name: str, rules_controller: InversionRulesController):
-        self.rules: RULES = None
         self.rules_controller = rules_controller
-        self.rules_controller.on_modified = self.save_rules
-        super().__init__(name + "_rules.yaml")
+        self.rules_controller._syncer = self
+        self.rules_controller.on_modified = self.save_file
+        super().__init__(name, {}, RULES)
 
     def setup(self):
         self.updater.move_on_update(self.filename)
 
-    def load_file(self):
-        try:
-            with self.observer.overlook():
-                with open(self.filename) as f:
-                    self.rules = yaml.load(f, Loader=yaml.CSafeLoader)
-            if self.rules is None:
-                self.rules = {}
-            for key in self.rules:
-                self.rules[key] = jsons.load(self.rules[key], InversionRule)
-        except FileNotFoundError:
-            self.rules = {}
-        finally:
-            self.dump_file()
+    @property
+    def data(self):
+        return self._data
 
-    def save_rules(self):
-        self.rules = self.rules_controller.rules
-        self.dump_file()
-
-    def dump_file(self):
-        with self.observer.overlook():
-            with open(self.filename, "w") as f:
-                if self.rules:
-                    yaml.dump(jsons.dump(self.rules,
-                                         strip_properties=True,
-                                         strip_privates=True,
-                                         strip_nulls=True),
-                              f, yaml.CDumper)
+    @data.setter
+    def data(self, new_data: T):
+        self._data = new_data
 
     def on_file_loaded(self):
-        self.rules_controller.load_rules(self.rules)
+        self.rules_controller.load_rules(self.data)
 
-    def on_file_reloaded(self):
-        print(f"Changes for '{self.filename}' applied")
-
+    def _dump(self, stream, json_kwargs={}, yaml_kwargs={}):
+        if not self._data:
+            stream.truncate(0)
+            return
+        super()._dump(
+            stream, json_kwargs | dict(
+                strip_properties=True,
+                strip_privates=True,
+                strip_nulls=True
+            ), yaml_kwargs
+        )

@@ -7,7 +7,7 @@ from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
-from realtime_data_sync import RulesFileManager, ConfigSyncer
+from realtime_data_sync import ConfigSyncer, RulesSyncer
 from settings import UserSettings
 from tray import Tray
 
@@ -17,7 +17,7 @@ class AppStartManager:
     state_controller = inject.attr(FilterStateController)
     interaction_manager = inject.attr(InteractionManager)
     config = inject.attr(UserSettings)
-    inversion_rules_file_manager = inject.attr(RulesFileManager)
+    inversion_rules = inject.attr(InversionRulesController)
     main_executor = inject.attr(MainExecutor)
     close_manager = inject.attr(AppCloseManager)
     tray = inject.attr(Tray)
@@ -25,7 +25,7 @@ class AppStartManager:
     def setup(self):
         self.close_manager.setup()
         self.config._syncer.setup()
-        self.inversion_rules_file_manager.setup()
+        self.inversion_rules._syncer.setup()
         self.interaction_manager.setup()
         self.tray.setup()
 
@@ -64,10 +64,8 @@ def configure(binder: inject.Binder):
     for field, class_ in UserSettings.__annotations__.items():
         binder.bind_to_provider(class_, lambda field=field: getattr(config_syncer.data, field))
 
-    inversion_rules = InversionRulesController()
-    inversion_rules_file_manager = RulesFileManager("inversion", inversion_rules)
-    binder.bind(InversionRulesController, inversion_rules)
-    binder.bind(RulesFileManager, inversion_rules_file_manager)
+    inversion_rules_syncer = RulesSyncer("inversion_rules", InversionRulesController())
+    binder.bind(InversionRulesController, inversion_rules_syncer.rules_controller)
 
 
 inject.configure(configure)
