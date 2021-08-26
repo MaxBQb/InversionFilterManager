@@ -35,11 +35,11 @@ setup(console=[dict(
       version=app.__version__,
       author=app.__author__,
       description="Inverts colors when you opens blinding white windows",
-      data_files=[('.', ["config_description.ini", "update.bat"]),
+      data_files=[('.', ["update.bat"]),
                   ('./img', glob('img/*'))],
       options=dict(
           py2exe=dict(
-              optimize=2,
+              optimize=1,
               includes='pystray._win32'
           )
       ))

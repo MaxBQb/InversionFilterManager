@@ -4,13 +4,13 @@ import win32gui
 from win32con import SW_HIDE, SW_SHOW
 import win32console
 from PIL import Image
-from configobj import ConfigObj
 from pystray import Menu, MenuItem, Icon
 import _meta as app
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
 from realtime_data_sync import RulesFileManager
+from settings import UserSettings
 from utils import explore
 
 
@@ -34,7 +34,7 @@ def make_toggle(out_func=None, default_value=False):
 
 
 class Tray:
-    config = inject.attr(ConfigObj)
+    config = inject.attr(UserSettings)
     rules_file_manager = inject.attr(RulesFileManager)
     im = inject.attr(InteractionManager)
     updater = inject.attr(AutoUpdater)
@@ -102,8 +102,8 @@ class Tray:
                 Menu(
                     MenuItem(ref('Work directory'),
                              _open(".")),
-                    MenuItem(ref('Config file'),
-                             _open(self.config.filename)),
+                    MenuItem(ref('Settings file'),
+                             _open(self.config._syncer.filename)),
                     MenuItem(ref('Inversion rules file'),
                              _open(self.rules_file_manager.filename))
                 )

@@ -1,15 +1,14 @@
 import asyncio
 from asyncio import create_task, to_thread
-from pathlib import Path
 import inject
-from configobj import ConfigObj
 from active_window_checker import FilterStateController
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
-from realtime_data_sync import ConfigFileManager, RulesFileManager
+from realtime_data_sync import RulesFileManager, ConfigSyncer
+from settings import UserSettings
 from tray import Tray
 
 
@@ -17,8 +16,7 @@ class AppStartManager:
     updater = inject.attr(AutoUpdater)
     state_controller = inject.attr(FilterStateController)
     interaction_manager = inject.attr(InteractionManager)
-    config_file_manager = inject.attr(ConfigFileManager)
-    config = inject.attr(ConfigObj)
+    config = inject.attr(UserSettings)
     inversion_rules_file_manager = inject.attr(RulesFileManager)
     main_executor = inject.attr(MainExecutor)
     close_manager = inject.attr(AppCloseManager)
@@ -26,7 +24,7 @@ class AppStartManager:
 
     def setup(self):
         self.close_manager.setup()
-        self.config_file_manager.setup()
+        self.config._syncer.setup()
         self.inversion_rules_file_manager.setup()
         self.interaction_manager.setup()
         self.tray.setup()
@@ -61,9 +59,10 @@ class AppStartManager:
 def configure(binder: inject.Binder):
     # Couple of components
     # Handled at runtime
-    config_manager = ConfigFileManager("config")
-    binder.bind(ConfigFileManager, config_manager)
-    binder.bind(ConfigObj, config_manager.config)
+    config_syncer = ConfigSyncer("settings", UserSettings())
+    binder.bind(UserSettings, config_syncer.data)
+    for field, class_ in UserSettings.__annotations__.items():
+        binder.bind_to_provider(class_, lambda field=field: getattr(config_syncer.data, field))
 
     inversion_rules = InversionRulesController()
     inversion_rules_file_manager = RulesFileManager("inversion", inversion_rules)

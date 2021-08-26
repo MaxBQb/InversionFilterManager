@@ -6,8 +6,8 @@ from pathlib import Path
 from queue import Queue
 from time import sleep
 import inject
-from configobj import ConfigObj
 from app_close import AppCloseManager
+from commented_config import CommentsHolder
 from interaction import InteractionManager
 
 
@@ -28,8 +28,26 @@ class VersionInfo:
         return get_version(self.version_text)
 
 
+class AutoUpdateSettings:
+    _comments_ = CommentsHolder()
+
+    check_for_updates: bool = True
+    _comments_.add("""
+       [{default!r}] Automatically checks for updates once per day
+       (Since program started)
+       Note, that you are still able to check updates manually,
+       Also there is no effect, if program starts from .py file
+    """, locals())
+
+    ask_before_update: bool = True
+    _comments_.add("""
+           [{default!r}] When new release found, ask user confirmation
+           before install it
+        """, locals())
+
+
 class AutoUpdater:
-    config = inject.attr(ConfigObj)
+    config = inject.attr(AutoUpdateSettings)
     im = inject.attr(InteractionManager)
     close_manager = inject.attr(AppCloseManager)
 
@@ -93,7 +111,7 @@ class AutoUpdater:
 
     def _run_check_loop(self):
         while True:
-            if self.config["update"]["check_for_updates"]:
+            if self.config.check_for_updates:
                 self.check_for_updates()
             sleep(self.delay)
 
@@ -127,7 +145,7 @@ class AutoUpdater:
             print("Update failed:", e)
 
     def request_update(self, version_info):
-        if not self.config["update"]["ask_before_update"]:
+        if not self.config.ask_before_update:
             return True
         self.im.request_update(
             version_info.version_text,

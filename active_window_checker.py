@@ -18,9 +18,9 @@ import inject
 import win32con
 import win32gui
 import win32process
-from configobj import ConfigObj
 import color_filter
 from app_close import AppCloseManager
+from commented_config import CommentsHolder
 from inversion_rules import InversionRulesController
 
 user32 = ctypes.windll.user32
@@ -192,8 +192,20 @@ def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoUninitialize()
 
 
+class WinTrackerSettings:
+    """
+    Specifies interaction with windows events
+    """
+    _comments_ = CommentsHolder()
+
+    show_events: bool = False
+    _comments_.add("""
+       [{default!r}] Display all window switch events
+    """, locals())
+
+
 class FilterStateController:
-    config = inject.attr(ConfigObj)
+    config = inject.attr(WinTrackerSettings)
     rules = inject.attr(InversionRulesController)
 
     def __init__(self):
@@ -209,15 +221,15 @@ class FilterStateController:
                                   idChild,
                                   dwEventThread,
                                   dwmsEventTime):
-        from active_window_checker import get_window_info, eventTypes
-
         if idObject != 0:
             return
+
         result = get_window_info(hwnd)
         if not result:
             return
+
         winfo = self.last_active_window = result
         self.last_active_windows.append(winfo)
-        if self.config["display"]["show_events"]:
+        if self.config.show_events:
             print(winfo.path, eventTypes.get(event, hex(event)))
         color_filter.set_active(self.rules.is_inversion_required(winfo))
