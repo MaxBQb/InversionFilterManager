@@ -4,11 +4,17 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
-from time import sleep
 import inject
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
+from _meta import IndirectDependency
 from interaction import InteractionManager
+from datetime import timedelta
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from settings import UserSettingsController, UserSettings
 
 
 @dataclass
@@ -41,9 +47,15 @@ class AutoUpdateSettings:
 
     ask_before_update: bool = True
     _comments_.add("""
-           [{default!r}] When new release found, ask user confirmation
-           before install it
-        """, locals())
+       [{default!r}] When new release found, ask user confirmation
+       before install it
+    """, locals())
+
+    check_delay: int = 24
+    _comments_.add("""
+       [{default!r} hours] Check for updates with delay specified
+       Starts from last check, restarts when delay value updated
+    """, locals())
 
 
 class AutoUpdater:
@@ -52,10 +64,10 @@ class AutoUpdater:
     close_manager = inject.attr(AppCloseManager)
 
     def __init__(self):
-        from threading import Thread
-        from datetime import timedelta
-        self.delay = timedelta(days=1).total_seconds()
+        from threading import Thread, Event
+        self.delay = self._get_delay(self.config.check_delay)
         self.response = Queue()
+        self.delay_changed = Event()
         # carry-on baggage is list of filenames
         # moved to new location on update
         self.carryon: list[str] = []
@@ -66,7 +78,25 @@ class AutoUpdater:
                 target=self._run_check_loop,
                 daemon=True
             )
+            self._setup_interrupt()
         self.update_in_progress = False
+
+    @inject.params(settings_controller=IndirectDependency.SETTINGS_CONTROLLER)
+    def _setup_interrupt(self, settings_controller: 'UserSettingsController'):
+        def get_key(settings: 'UserSettings'):
+            return settings.auto_update.check_delay
+
+        settings_controller.add_option_change_handler(
+            get_key, self._update_delay
+        )
+
+    def _update_delay(self, delay: int):
+        self.delay = self._get_delay(delay)
+        self.delay_changed.set()
+
+    @staticmethod
+    def _get_delay(delay: int):
+        return timedelta(hours=delay).total_seconds()
 
     def move_on_update(self, filename):
         self.carryon.append(filename)
@@ -113,7 +143,9 @@ class AutoUpdater:
         while True:
             if self.config.check_for_updates:
                 self.check_for_updates()
-            sleep(self.delay)
+
+            if self.delay_changed.wait(self.delay):
+                self.delay_changed.clear()
 
     def check_for_updates(self):
         try:
