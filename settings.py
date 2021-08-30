@@ -32,6 +32,7 @@ class UserSettingsController:
 
     def setup(self):
         self._syncer.start()
+        self._syncer.preserve_on_update()
 
     @property
     def settings(self):

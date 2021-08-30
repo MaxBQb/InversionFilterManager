@@ -28,8 +28,6 @@ class AppStartManager:
         self.close_manager.setup()
         self.interaction_manager.setup()
         self.tray.setup()
-        self.updater.move_on_update(self.settings_controller.filename)
-        self.updater.move_on_update(self.inversion_rules.filename)
 
     async def run(self):
         from active_window_checker import listen_switch_events
@@ -72,6 +70,9 @@ def configure(binder: inject.Binder):
                 field
             )
         )
+
+    binder.bind_to_provider(IndirectDependency.CARRYON_BEFORE_UPDATE,
+                            lambda: inject.instance(AutoUpdater).carryon)
 
 
 inject.configure(configure)

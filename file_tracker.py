@@ -2,11 +2,13 @@ import os
 from contextlib import contextmanager
 from time import time
 from typing import Generic, TypeVar
+import inject
 import jsons
 import yaml
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer as DirectoryObserver
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
+from _meta import IndirectDependency
 
 
 T = TypeVar('T')
@@ -29,6 +31,10 @@ class DataFileSyncer(Generic[T]):
     def start(self):
         self.load_file()
         self._watch_file()
+
+    @inject.params(carryon=IndirectDependency.CARRYON_BEFORE_UPDATE)
+    def preserve_on_update(self, carryon: list[str]):
+        carryon.append(self.filename)
 
     def _watch_file(self):
         handler = PatternMatchingEventHandler(patterns=[".\\" + self.filename],

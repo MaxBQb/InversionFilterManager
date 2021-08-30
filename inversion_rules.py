@@ -94,6 +94,7 @@ class InversionRulesController:
 
     def setup(self):
         self._syncer.start()
+        self._syncer.preserve_on_update()
 
     def load_rules(self, rules: RULES):
         self.rules = rules

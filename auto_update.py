@@ -98,9 +98,6 @@ class AutoUpdater:
     def _get_delay(delay: int):
         return timedelta(hours=delay).total_seconds()
 
-    def move_on_update(self, filename):
-        self.carryon.append(filename)
-
     def _move_carryon(self,
                       current_path: Path,
                       new_path: Path):

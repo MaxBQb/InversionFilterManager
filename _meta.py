@@ -9,3 +9,4 @@ __icon__ = "img/inversion_manager.ico"
 
 class IndirectDependency(Enum):
     SETTINGS_CONTROLLER = auto()
+    CARRYON_BEFORE_UPDATE = auto()
