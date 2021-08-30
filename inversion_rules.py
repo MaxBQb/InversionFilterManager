@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
 from typing import TYPE_CHECKING
+from file_tracker import DataFileSyncer
 
 
 if TYPE_CHECKING:
@@ -87,6 +88,12 @@ class InversionRulesController:
         self.rules: RULES = dict()
         self.included: RULES = dict()
         self.excluded: RULES = dict()
+        self._syncer = RulesSyncer("inversion_rules", self.rules, RULES)
+        self.filename = self._syncer.filename
+        self._syncer.on_file_reloaded = lambda: self.load_rules(self._syncer.data)
+
+    def setup(self):
+        self._syncer.start()
 
     def load_rules(self, rules: RULES):
         self.rules = rules
@@ -97,7 +104,7 @@ class InversionRulesController:
     def add_rule(self, name: str, rule: InversionRule):
         self.rules[name] = rule
         self._detect_accessory(rule)[name] = rule
-        self.on_modified()
+        self._syncer.save_file()
 
     def remove_rules(self, names: set[str]):
         if not names:
@@ -106,10 +113,7 @@ class InversionRulesController:
         for name in names:
             del self._detect_accessory(self.rules[name])[name]
             del self.rules[name]
-        self.on_modified()
-
-    def on_modified(self):
-        pass
+        self._syncer.save_file()
 
     def is_inversion_required(self, info: 'WindowInfo'):
         return (
@@ -141,3 +145,17 @@ def check_text(text: str, plain: str, regex):
     if regex:
         return bool(regex.fullmatch(text))
     return text == plain
+
+
+class RulesSyncer(DataFileSyncer):
+    JSON_DUMPER_KWARGS = dict(
+        strip_properties=True,
+        strip_privates=True,
+        strip_nulls=True
+    )
+
+    def _dump(self, stream):
+        if not self.data:
+            stream.truncate(0)
+        else:
+            super()._dump(stream)

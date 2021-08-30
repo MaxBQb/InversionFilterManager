@@ -1,47 +1,82 @@
+import os
 from contextlib import contextmanager
 from time import time
+from typing import Generic, TypeVar
+import jsons
+import yaml
 from watchdog.events import PatternMatchingEventHandler
-from watchdog.observers import Observer
+from watchdog.observers import Observer as DirectoryObserver
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
 
 
-class FileTracker:
-    def __init__(self, filename: str):
-        self.filename = filename
-        self.observer = LazyObserver()
-        self.load_file()
-        self.watch_file()
-        self.on_file_loaded()
+T = TypeVar('T')
 
-    def watch_file(self):
+
+class DataFileSyncer(Generic[T]):
+    JSON_DUMPER_KWARGS = {}
+    YAML_DUMPER_KWARGS = {}
+
+    def __init__(self,
+                 filename: str,
+                 data: T,
+                 data_type=None,
+                 extension="yaml"):
+        self.data = data
+        self._class = data_type or type(data)
+        self.filename = f'{filename}.{extension}'
+        self.dir_observer = LazyDirectoryObserver()
+
+    def start(self):
+        self.load_file()
+        self._watch_file()
+
+    def _watch_file(self):
         handler = PatternMatchingEventHandler(patterns=[".\\" + self.filename],
                                               case_sensitive=True)
 
         def on_modified(event):
-            if not self.observer.is_completely_awake():
+            if not self.dir_observer.is_completely_awake():
                 return
-            self.reload_file()
-            self.on_file_loaded()
-            self.on_file_reloaded()
+            self.load_file()
 
         handler.on_modified = on_modified
-        self.observer.schedule(handler, ".")
-        self.observer.start()
+        self.dir_observer.schedule(handler, ".")
+        self.dir_observer.start()
+
+    def load_file(self):
+        if not os.path.exists(self.filename):
+            self.save_file()
+            return
+
+        with self.dir_observer.overlook():
+            with open(self.filename, encoding="utf-8-sig") as f:
+                new_data: T = self._load(f)
+
+        if new_data != self.data:
+            self.data = new_data
+            self.on_file_reloaded()
+
+        self.save_file()
+
+    def _load(self, stream):
+        return jsons.load(yaml.load(
+            stream, yaml.CSafeLoader
+        ) or {}, self._class)
+
+    def save_file(self):
+        with self.dir_observer.overlook():
+            with open(self.filename, "w", encoding="utf-8") as f:
+                self._dump(f)
+
+    def _dump(self, stream):
+        yaml.dump(jsons.dump(self.data, **self.JSON_DUMPER_KWARGS),
+                  stream, yaml.CDumper, **self.YAML_DUMPER_KWARGS)
 
     def on_file_reloaded(self):
         pass
 
-    def on_file_loaded(self):
-        pass
 
-    def load_file(self):
-        pass
-
-    def reload_file(self):
-        self.load_file()
-
-
-class LazyObserver(Observer):
+class LazyDirectoryObserver(DirectoryObserver):
     def __init__(self, timeout=DEFAULT_OBSERVER_TIMEOUT):
         super().__init__(timeout)
         self._is_sleeping = False
@@ -57,7 +92,7 @@ class LazyObserver(Observer):
                 self._finish_awakening()
             return
         
-        super(LazyObserver, self).dispatch_events(*args, **kwargs)
+        super(LazyDirectoryObserver, self).dispatch_events(*args, **kwargs)
 
     @contextmanager
     def overlook(self):

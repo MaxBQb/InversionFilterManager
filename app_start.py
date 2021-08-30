@@ -7,8 +7,7 @@ from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
-from realtime_data_sync import ConfigSyncer, RulesSyncer
-from settings import UserSettings
+from settings import UserSettings, ConfigSyncer
 from tray import Tray
 
 
@@ -16,18 +15,20 @@ class AppStartManager:
     updater = inject.attr(AutoUpdater)
     state_controller = inject.attr(FilterStateController)
     interaction_manager = inject.attr(InteractionManager)
-    config = inject.attr(UserSettings)
+    config_syncer = inject.attr(ConfigSyncer)
     inversion_rules = inject.attr(InversionRulesController)
     main_executor = inject.attr(MainExecutor)
     close_manager = inject.attr(AppCloseManager)
     tray = inject.attr(Tray)
 
     def setup(self):
+        self.config_syncer.start()
+        self.inversion_rules.setup()
         self.close_manager.setup()
-        self.config._syncer.setup()
-        self.inversion_rules._syncer.setup()
         self.interaction_manager.setup()
         self.tray.setup()
+        self.updater.move_on_update(self.config_syncer.filename)
+        self.updater.move_on_update(self.inversion_rules.filename)
 
     async def run(self):
         from active_window_checker import listen_switch_events
@@ -60,12 +61,11 @@ def configure(binder: inject.Binder):
     # Couple of components
     # Handled at runtime
     config_syncer = ConfigSyncer("settings", UserSettings())
+    binder.bind(ConfigSyncer, config_syncer)
     binder.bind(UserSettings, config_syncer.data)
+
     for field, class_ in UserSettings.__annotations__.items():
         binder.bind_to_provider(class_, lambda field=field: getattr(config_syncer.data, field))
-
-    inversion_rules_syncer = RulesSyncer("inversion_rules", InversionRulesController())
-    binder.bind(InversionRulesController, inversion_rules_syncer.rules_controller)
 
 
 inject.configure(configure)

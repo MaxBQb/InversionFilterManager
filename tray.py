@@ -10,7 +10,7 @@ from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
-from settings import UserSettings
+from settings import ConfigSyncer
 from utils import explore
 
 
@@ -34,7 +34,7 @@ def make_toggle(out_func=None, default_value=False):
 
 
 class Tray:
-    config = inject.attr(UserSettings)
+    config_syncer = inject.attr(ConfigSyncer)
     inversion_rules = inject.attr(InversionRulesController)
     im = inject.attr(InteractionManager)
     updater = inject.attr(AutoUpdater)
@@ -103,9 +103,9 @@ class Tray:
                     MenuItem(ref('Work directory'),
                              _open(".")),
                     MenuItem(ref('Settings file'),
-                             _open(self.config._syncer.filename)),
+                             _open(self.config_syncer.filename)),
                     MenuItem(ref('Inversion rules file'),
-                             _open(self.inversion_rules._syncer.filename))
+                             _open(self.inversion_rules.filename))
                 )
             ),
             Menu.SEPARATOR,
