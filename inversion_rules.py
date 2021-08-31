@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
 from typing import TYPE_CHECKING
-from file_tracker import DataFileSyncer
-
+from file_tracker import DataFileSyncer, Syncable
 
 if TYPE_CHECKING:
     from active_window_checker import WindowInfo
@@ -75,7 +74,7 @@ class InversionRule:
 RULES = dict[str, InversionRule]
 
 
-class InversionRulesController:
+class InversionRulesController(Syncable):
     """
     Determines when to use inversion color filter
     Accumulates active rules
@@ -88,8 +87,7 @@ class InversionRulesController:
         self.rules: RULES = dict()
         self.included: RULES = dict()
         self.excluded: RULES = dict()
-        self._syncer = RulesSyncer("inversion_rules", self.rules, RULES)
-        self.filename = self._syncer.filename
+        super().__init__(RulesSyncer("inversion_rules", self.rules, RULES))
         self._syncer.on_file_reloaded = lambda: self.load_rules(self._syncer.data)
 
     def setup(self):

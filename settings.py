@@ -3,7 +3,7 @@ from typing import Callable, TypeVar
 from active_window_checker import WinTrackerSettings
 from auto_update import AutoUpdateSettings
 from commented_config import CommentsHolder, CommentsWriter, get_comments_holder
-from file_tracker import DataFileSyncer
+from file_tracker import DataFileSyncer, Syncable
 
 
 @dataclass
@@ -22,10 +22,9 @@ OPTION_PATH = Callable[[UserSettings], T]
 OPTION_CHANGE_HANDLER = Callable[[T], None]
 
 
-class UserSettingsController:
+class UserSettingsController(Syncable):
     def __init__(self):
-        self._syncer = ConfigSyncer("settings", UserSettings())
-        self.filename = self._syncer.filename
+        super().__init__(ConfigSyncer("settings", UserSettings()))
         self._syncer.on_file_reloaded = self.on_settings_changed
         self._change_handlers: list[tuple[OPTION_PATH, OPTION_CHANGE_HANDLER]] = list()
         self._old_data = None

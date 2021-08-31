@@ -5,6 +5,7 @@ from typing import Generic, TypeVar
 import inject
 import jsons
 import yaml
+from abc import ABC
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer as DirectoryObserver
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
@@ -80,6 +81,18 @@ class DataFileSyncer(Generic[T]):
 
     def on_file_reloaded(self):
         pass
+
+
+class Syncable(ABC):
+    def __init__(self, syncer: DataFileSyncer):
+        self._syncer = syncer
+        self.filename = syncer.filename
+
+    def load(self):
+        self._syncer.load_file()
+
+    def save(self):
+        self._syncer.save_file()
 
 
 class LazyDirectoryObserver(DirectoryObserver):

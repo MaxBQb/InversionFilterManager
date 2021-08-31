@@ -108,6 +108,15 @@ class Tray:
                              _open(self.inversion_rules.filename))
                 )
             ),
+            MenuItem(
+                'Re' + ref('load from disk'),
+                Menu(
+                    MenuItem(ref('Settings file'),
+                             callback(self.settings_controller.load)),
+                    MenuItem(ref('Inversion rules file'),
+                             callback(self.settings_controller.load)),
+                )
+            ),
             Menu.SEPARATOR,
             MenuItem(ref('Add app to inversion rules'),
                      callback(im.choose_window_to_make_rule)),
