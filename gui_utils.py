@@ -125,6 +125,8 @@ class BaseNonBlockingWindow:
         self.window: sg.Window = None
         self.layout: list[list] = []
         self.dependent_windows: set[BaseNonBlockingWindow] = set()
+        # Applies default input style
+        self._inputs: list[str] = []
 
     def _add_dependency(self, dependent_window):
         self.dependent_windows.add(dependent_window)
@@ -187,6 +189,11 @@ class BaseNonBlockingWindow:
 
     def dynamic_build(self):
         self.setup_window()
+        for key in self._inputs:
+            self.window[key].Widget.config(
+                **INPUT_EXTRA_DEFAULTS
+            )
+        self._inputs = None
         self.window.alpha_channel = 1
 
     def setup_window(self):

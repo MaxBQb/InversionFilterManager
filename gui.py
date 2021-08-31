@@ -513,10 +513,9 @@ class RuleDescriptionWindow(guitils.BaseNonBlockingWindow):
         super().__init__()
         self.rule = rule
         self.name = name
-        self.inputs: list[str] = None
 
     def build_layout(self):
-        self.layout, self.inputs = guitils.layout_from_fields(
+        self.layout, self._inputs = guitils.layout_from_fields(
             dict(name=self.name) | {
                 k: str(v) if not isinstance(v, Enum) else v.name
                 for k, v in utils.public_fields(self.rule)
@@ -524,14 +523,6 @@ class RuleDescriptionWindow(guitils.BaseNonBlockingWindow):
             },
             self.ID.INPUT
         )
-
-    def dynamic_build(self):
-        for input in self.inputs:
-            self.window[input].Widget.config(
-                **guitils.INPUT_EXTRA_DEFAULTS
-            )
-        self.inputs = None
-        super().dynamic_build()
 
 
 class UpdateRequestWindow(guitils.ConfirmationWindow):
@@ -577,7 +568,7 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
         label_size = (utils.max_len(description.keys()) + 1, 1)
         input_size = (utils.max_len(description.values()) + 4, 1)
         font = guitils.INPUT_DEFAULTS['font']
-        self.inputs = [
+        self._inputs = [
             guitils.join_id(self.ID.INPUT, name)
             for name in description
         ]
@@ -595,17 +586,9 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
                  size=input_size,
                  **guitils.INPUT_DEFAULTS
              )]
-            for (label, content), input_key in zip(description.items(), self.inputs)
+            for (label, content), input_key in zip(description.items(), self._inputs)
         ]
         super().build_layout()
-
-    def dynamic_build(self):
-        for input in self.inputs:
-            self.window[input].Widget.config(
-                **guitils.INPUT_EXTRA_DEFAULTS
-            )
-        self.inputs = None
-        super().dynamic_build()
 
 
 class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
@@ -622,7 +605,6 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
         self.chosen_window: WindowInfo = None
         self.name_to_winfo_map = dict()
         self.property_to_id_map = dict()
-        self.inputs = list()
 
     def run(self) -> WindowInfo:
         super().run()
@@ -663,7 +645,7 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
             for winfo in self.windows_info
         )
         max_text_len = min(40,  max(20, max_text_len+1))
-        layout, self.inputs = guitils.layout_from_fields(
+        layout, self._inputs = guitils.layout_from_fields(
             utils.public_fields(self.selected_window),
             self.ID.DESCRIPTION,
             content_kwargs=dict(size=(max_text_len, 1))
@@ -672,7 +654,7 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
         self.property_to_id_map = {
             k: input_id
             for input_id, (k, v) in zip(
-                self.inputs,
+                self._inputs,
                 utils.public_fields(self.selected_window)
             )
         }
@@ -703,11 +685,6 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
         self.update_info(self.ID.LIST_NAMES, self.window, {
             self.ID.LIST_NAMES: [self._get_name(self.selected_window)]
         })
-        for input in self.inputs:
-            self.window[input].Widget.config(
-                **guitils.INPUT_EXTRA_DEFAULTS
-            )
-        self.inputs = None
         self.window[self.ID.LIST_NAMES].set_focus()
         super().dynamic_build()
 
