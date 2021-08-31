@@ -37,17 +37,15 @@ class MainExecutor:
 def execute_in_main_thread(priority: int = 10,
                            last: bool = False):
     def _decorator(func):
-        @inject.autoparams()
-        def _wrapper(*args, main_executor: MainExecutor = None, **kwargs):
+        def _wrapper(*args, **kwargs):
             if is_main_thread():
                 # Note that if thread is not main
                 # Then return value is None
                 return func(*args, **kwargs)
 
-            main_executor.send_callback(Callback(
+            inject.instance(MainExecutor).send_callback(Callback(
                 lambda: func(*args, **kwargs),
-                priority,
-                last
+                priority, last
             ))
         return _wrapper
     return _decorator
