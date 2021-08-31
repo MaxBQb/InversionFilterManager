@@ -1,5 +1,5 @@
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from time import time
 from typing import Generic, TypeVar
 import inject
@@ -59,16 +59,19 @@ class DataFileSyncer(Generic[T]):
             with open(self.filename, encoding="utf-8-sig") as f:
                 new_data: T = self._load(f)
 
+        if new_data is None:
+            self.save_file()
+            return
+
         if new_data != self.data:
             self.data = new_data
             self.on_file_reloaded()
 
-        self.save_file()
-
     def _load(self, stream):
-        return jsons.load(yaml.load(
-            stream, yaml.CSafeLoader
-        ) or {}, self._class)
+        with suppress(jsons.DeserializationError, yaml.YAMLError):
+            return jsons.load(yaml.load(
+                stream, yaml.CSafeLoader
+            ) or {}, self._class)
 
     def save_file(self):
         with self.dir_observer.overlook():
@@ -77,7 +80,7 @@ class DataFileSyncer(Generic[T]):
 
     def _dump(self, stream):
         yaml.dump(jsons.dump(self.data, **self.JSON_DUMPER_KWARGS),
-                  stream, yaml.CDumper, **self.YAML_DUMPER_KWARGS)
+                  stream, yaml.CSafeDumper, **self.YAML_DUMPER_KWARGS)
 
     def on_file_reloaded(self):
         pass
