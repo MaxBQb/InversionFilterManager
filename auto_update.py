@@ -34,6 +34,7 @@ class VersionInfo:
         return get_version(self.version_text)
 
 
+@dataclass
 class AutoUpdateSettings:
     _comments_ = CommentsHolder()
 
@@ -56,6 +57,9 @@ class AutoUpdateSettings:
        [{default!r} hours] Check for updates with delay specified
        Starts from last check, restarts when delay value updated
     """, locals())
+
+    def __post_init__(self):
+        self.check_delay = min(1000, abs(self.check_delay) or 1)
 
 
 class AutoUpdater:
