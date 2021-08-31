@@ -12,6 +12,7 @@ from inversion_rules import InversionRule, InversionRulesController, LookForTitl
 
 class RuleCreationWindow(guitils.BaseInteractiveWindow):
     title = guitils.get_title("create rule")
+    rules_controller = inject.attr(InversionRulesController)
 
     class TextState(utils.StrHolder):
         PLAIN: str
@@ -24,6 +25,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         BUTTON_EXCLUSIVE_RULE: str
         BUTTON_PATH: str
         BUTTON_PATH_BROWSE: str
+        LABEL_ERROR: str
         LABEL_TITLE: str
         LABEL_PATH: str
         INPUT_TITLE: str
@@ -125,6 +127,12 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             [guitils.center(sg.Text(
                 "Here you can choose app, "
                 "windows of which will cause inversion"
+            ))],
+            [sg.pin(sg.Text(
+                "This name already exists!",
+                text_color="gold",
+                visible=False,
+                key=self.ID.LABEL_ERROR
             ))],
             [
                 sg.Text(
@@ -282,6 +290,12 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         )
 
     def on_submit(self, event: str, window: sg.Window, values):
+        self.name = values[self.ID.INPUT_NAME]
+
+        if self.name in self.rules_controller.rules:
+            window[self.ID.LABEL_ERROR].update(visible=True)
+            return
+
         def get_keys(button, key):
             value = values[key]
             return {
@@ -296,7 +310,6 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.look_for_title_button.selected,
             self.exclusive_rule.selected
         )
-        self.name = values[self.ID.INPUT_NAME]
         self.close()
 
     def get_toggle_escape_handler(self,
