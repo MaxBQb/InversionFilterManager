@@ -1,3 +1,4 @@
+from enum import Enum
 from os.path import dirname
 import PySimpleGUI as sg
 import inject
@@ -504,7 +505,7 @@ class RuleDescriptionWindow(guitils.BaseNonBlockingWindow):
     def build_layout(self):
         self.layout, self.inputs = guitils.layout_from_fields(
             dict(name=self.name) | {
-                k: str(v)
+                k: str(v) if not isinstance(v, Enum) else v.name
                 for k, v in utils.public_fields(self.rule)
                 if v
             },
