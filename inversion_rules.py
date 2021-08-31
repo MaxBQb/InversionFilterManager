@@ -99,10 +99,12 @@ class InversionRulesController(Syncable):
         self.included, self.excluded = dict(), dict()
         for name, rule in rules.items():
             self._detect_accessory(rule)[name] = rule
+        self.on_rules_changed()
 
     def add_rule(self, name: str, rule: InversionRule):
         self.rules[name] = rule
         self._detect_accessory(rule)[name] = rule
+        self.on_rules_changed()
         self._syncer.save_file()
 
     def remove_rules(self, names: set[str]):
@@ -113,6 +115,7 @@ class InversionRulesController(Syncable):
             del self._detect_accessory(self.rules[name])[name]
             del self.rules[name]
         self._syncer.save_file()
+        self.on_rules_changed()
 
     def is_inversion_required(self, info: 'WindowInfo'):
         return (
@@ -134,6 +137,9 @@ class InversionRulesController(Syncable):
         if rule.exclude:
             return self.excluded
         return self.included
+
+    def on_rules_changed(self):
+        pass
 
 
 def try_compile(raw_regex: str):

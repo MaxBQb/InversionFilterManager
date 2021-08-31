@@ -25,6 +25,7 @@ class AppStartManager:
     def setup(self):
         self.settings_controller.setup()
         self.inversion_rules.setup()
+        self.state_controller.setup()
         self.close_manager.setup()
         self.interaction_manager.setup()
         self.tray.setup()

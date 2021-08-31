@@ -213,6 +213,9 @@ class FilterStateController:
         self.last_active_windows = deque(maxlen=10)
         self.last_active_window = None
 
+    def setup(self):
+        self.rules.on_rules_changed = self.update_filter_state
+
     def on_active_window_switched(self,
                                   hWinEventHook,
                                   event,
@@ -232,4 +235,9 @@ class FilterStateController:
         self.last_active_windows.append(winfo)
         if self.config.show_events:
             print(winfo.path, eventTypes.get(event, hex(event)))
+        self.update_filter_state()
+
+    def update_filter_state(self, winfo: WindowInfo = None):
+        if winfo is None:
+            winfo = self.last_active_window
         color_filter.set_active(self.rules.is_inversion_required(winfo))
