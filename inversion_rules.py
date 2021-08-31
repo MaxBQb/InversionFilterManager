@@ -120,7 +120,9 @@ class InversionRulesController(Syncable):
             not self.has_active_rules(info, self.excluded)
         )
 
-    def has_active_rules(self, info: 'WindowInfo', rules: RULES):
+    def has_active_rules(self, info: 'WindowInfo', rules: RULES = None):
+        if rules is None:
+            rules = self.rules
         return next(self.get_active_rules(info, rules), None) is not None
 
     @staticmethod

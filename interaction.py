@@ -39,7 +39,7 @@ class InteractionManager:
         if not winfo:
             return
 
-        if not self.rules_controller.is_inversion_required(winfo):
+        if not self.rules_controller.has_active_rules(winfo):
             return
 
         rules = gui.RuleRemovingWindow(list(
@@ -56,9 +56,17 @@ class InteractionManager:
         if not self.state_controller.last_active_window:
             return
 
-        winfo = gui.ChooseRemoveCandidateWindow(list(
-            self.state_controller.last_active_windows
-        )).run()
+        candidates = [
+            winfo for winfo in self.state_controller.last_active_windows
+            if self.rules_controller.has_active_rules(winfo)
+        ]
+
+        if not candidates:
+            return
+
+        winfo = (gui.ChooseRemoveCandidateWindow(candidates).run()
+                 if len(candidates) != 1
+                 else candidates[0])
 
         if winfo:
             self.delete_current_app(winfo)
@@ -68,9 +76,10 @@ class InteractionManager:
         if not self.state_controller.last_active_window:
             return
 
-        winfo = gui.ChooseAppendCandidateWindow(list(
-            self.state_controller.last_active_windows
-        )).run()
+        candidates = list(self.state_controller.last_active_windows)
+        winfo = (gui.ChooseAppendCandidateWindow(candidates).run()
+                 if len(candidates) != 1
+                 else candidates[0])
 
         if winfo:
             self.append_current_app(winfo)
