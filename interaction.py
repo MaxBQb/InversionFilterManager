@@ -88,8 +88,7 @@ class InteractionManager:
     def request_update(self,
                        latest,
                        file_size,
-                       developer_mode: bool,
                        response: Queue):
         response.put_nowait(gui.UpdateRequestWindow(
-            latest, file_size, developer_mode
+            latest, file_size
         ).run())

@@ -542,12 +542,10 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
 
     def __init__(self,
                  latest_version: str,
-                 file_size: int,
-                 developer_mode: bool):
+                 file_size: int):
         super().__init__("Do you want to install new release?")
         self.latest_version = latest_version
         self.file_size = file_size
-        self.developer_mode = developer_mode
 
     def build_layout(self):
         import _meta as app
@@ -557,7 +555,7 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
             [guitils.center(sg.Text('Update info', font=("Verdana", 18)))]
         ]
 
-        if self.developer_mode:
+        if app.__developer_mode__:
             self.layout.append([guitils.center(sg.Text(
                 'ATTENTION, YOU ARE IN DEVELOPER MODE',
                 font=("Tahoma", 16, 'bold'),

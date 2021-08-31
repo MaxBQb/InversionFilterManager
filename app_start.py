@@ -1,5 +1,4 @@
 import asyncio
-from asyncio import create_task, to_thread
 import inject
 from active_window_checker import FilterStateController
 from app_close import AppCloseManager
@@ -31,27 +30,15 @@ class AppStartManager:
         self.tray.setup()
 
     async def run(self):
-        from active_window_checker import listen_switch_events
-
-        tasks = []
-        tasks.append(create_task(to_thread(
-            listen_switch_events,
-            self.state_controller.on_active_window_switched
-        )))
-
-        tasks.append(create_task(
-            self.tray.run_async()
-        ))
-
-        tasks.append(create_task(
-            self.main_executor.run_loop()
-        ))
-
         self.updater.run_check_loop()
 
         print("I'm async")
         try:
-            await asyncio.gather(*tasks)
+            await asyncio.gather(
+                self.state_controller.run(),
+                self.tray.run_async(),
+                self.main_executor.run_loop(),
+            )
         except asyncio.exceptions.CancelledError:
             pass
         print("Bye")

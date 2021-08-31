@@ -7,7 +7,7 @@ from queue import Queue
 import inject
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
-from _meta import IndirectDependency
+from _meta import IndirectDependency, __developer_mode__
 from interaction import InteractionManager
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -75,8 +75,7 @@ class AutoUpdater:
         # carry-on baggage is list of filenames
         # moved to new location on update
         self.carryon: list[str] = []
-        self.developer_mode = sys.argv[0].endswith(".py")
-        if not self.developer_mode:
+        if not __developer_mode__:
             self.thread = Thread(
                 name="Update Checker",
                 target=self._run_check_loop,
@@ -135,7 +134,7 @@ class AutoUpdater:
             input("Press enter to continue update")
 
     def run_check_loop(self):
-        if self.developer_mode:
+        if __developer_mode__:
             return
         self.thread.start()
         return self.thread
@@ -183,7 +182,6 @@ class AutoUpdater:
         self.im.request_update(
             version_info.version_text,
             version_info.release_info.size,
-            self.developer_mode,
             self.response
         )
         return self.response.get()

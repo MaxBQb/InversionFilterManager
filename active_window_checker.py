@@ -12,6 +12,7 @@ and David Heffernan:
 import ctypes
 import ctypes.wintypes
 import sys
+from asyncio import to_thread
 from dataclasses import dataclass
 from functools import cached_property
 import inject
@@ -215,6 +216,12 @@ class FilterStateController:
 
     def setup(self):
         self.rules.on_rules_changed = self.update_filter_state
+
+    async def run(self):
+        await to_thread(
+            listen_switch_events,
+            self.on_active_window_switched
+        )
 
     def on_active_window_switched(self,
                                   hWinEventHook,
