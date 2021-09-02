@@ -216,6 +216,7 @@ class FilterStateController:
 
     def setup(self):
         self.rules.on_rules_changed = self.update_filter_state
+        color_filter.setup_color_filer_settings()
 
     async def run(self):
         await to_thread(
