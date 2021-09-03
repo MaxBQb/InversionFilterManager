@@ -1,8 +1,31 @@
 from contextlib import suppress
+from dataclasses import dataclass
 from time import sleep
+import inject
 from keyboard import press_and_release as hotkey
 from winregal import RegKey
 from os import system
+from commented_config import CommentsHolder
+
+
+@dataclass
+class ColorFilterSettings:
+    """
+    Set filter settings on startup
+    """
+    _comments_ = CommentsHolder()
+
+    setup_filter_state: bool = True
+    _comments_.add("""
+       [{default!r}] Open settings and setup:
+       Allow the shortcut key to toggle filter = Checked
+       Filter type = Inverted [first]
+    """, locals())
+
+    close_settings: bool = True
+    _comments_.add("""
+       [{default!r}] Close settings after setup
+    """, locals())
 
 
 def _get_filter_info(value: str):
@@ -34,7 +57,11 @@ def toggle():
     hotkey("ctrl+win", do_press=False)
 
 
-def setup_color_filer_settings():
+@inject.autoparams()
+def setup_color_filer_settings(settings: ColorFilterSettings):
+    if not settings.setup_filter_state:
+        return
+
     hotkey_enabled = is_hotkey_enabled()
 
     if hotkey_enabled and get_filter_type() == 1:
@@ -45,7 +72,7 @@ def setup_color_filer_settings():
     sleep(1)
     # Windows has bug, when opening easeofaccess-colorfilter
     # while this window is already opened
-    # filter will always set to Gray
+    # filter will always set to Grayscale
     # So you must check which filter selected twice :)
 
     options = (was_active, hotkey_enabled, get_filter_type() == 1)
@@ -59,4 +86,5 @@ def setup_color_filer_settings():
             hotkey("Shift + Tab")
         hotkey("Space")
 
-    hotkey("Alt + F4")
+    if settings.close_settings:
+        hotkey("Alt + F4")
