@@ -1,9 +1,10 @@
 import asyncio
 import time
 from typing import Callable
+import inject
 import win32api
 from win32con import WM_QUIT
-from main_thread_loop import execute_in_main_thread
+from main_thread_loop import execute_in_main_thread, MainExecutor
 
 
 class AppCloseManager:
@@ -38,7 +39,7 @@ class AppCloseManager:
         self._run_exit_handlers()
         self._close()
 
-    @execute_in_main_thread(0, True)
+    @execute_in_main_thread(0)
     def _close(self):
         for thread_id in self._blocked_threads:
             win32api.PostThreadMessage(
@@ -47,3 +48,5 @@ class AppCloseManager:
 
         for task in asyncio.all_tasks():
             task.cancel()
+
+        inject.instance(MainExecutor).close()
