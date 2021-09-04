@@ -48,6 +48,10 @@ class Tray:
     def setup(self):
         self.close_manager.add_exit_handler(self.close)
         self.console_hwnd = win32console.GetConsoleWindow()
+        self.close_manager.add_exit_handler(lambda: win32gui.ShowWindow(
+            self.console_hwnd,
+            SW_SHOW
+        ))
         win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
 
     def run(self):
