@@ -1,9 +1,11 @@
+from contextlib import contextmanager
 from queue import Queue
 import inject
 import keyboard
 import gui
 import gui_utils
 from active_window_checker import FilterStateController, WindowInfo
+from app_close import AppCloseManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import execute_in_main_thread
 
@@ -11,8 +13,25 @@ from main_thread_loop import execute_in_main_thread
 class InteractionManager:
     state_controller = inject.attr(FilterStateController)
     rules_controller = inject.attr(InversionRulesController)
+    close_manager = inject.attr(AppCloseManager)
+
+    def __init__(self):
+        self._current_window: gui_utils.BaseNonBlockingWindow = None
+
+    @contextmanager
+    def _open_window(self, window: gui_utils.BaseNonBlockingWindow):
+        try:
+            self._current_window = window
+            yield window
+        finally:
+            self._current_window = None
+
+    def close_current_window(self):
+        if self._current_window is not None:
+            self._current_window.send_close_event()
 
     def setup(self):
+        self.close_manager.add_exit_handler(self.close_current_window)
         gui_utils.init_theme()
         initial_hotkey = 'ctrl+alt+'
 
@@ -29,9 +48,11 @@ class InteractionManager:
         winfo = winfo or self.state_controller.last_active_window
         if not winfo:
             return
-        rule, name = gui.RuleCreationWindow(winfo).run()
-        if name is not None and rule:
-            self.rules_controller.add_rule(name, rule)
+
+        with self._open_window(gui.RuleCreationWindow(winfo)) as window:
+            rule, name = window.run()
+            if name is not None and rule:
+                self.rules_controller.add_rule(name, rule)
 
     @execute_in_main_thread()
     def delete_current_app(self, winfo: WindowInfo = None):
@@ -42,14 +63,17 @@ class InteractionManager:
         if not self.rules_controller.has_active_rules(winfo):
             return
 
-        rules = gui.RuleRemovingWindow(list(
+        active_rules = list(
             self.rules_controller.get_active_rules(
                 winfo, self.rules_controller.rules
             )
-        )).run()
+        )
 
-        if rules:
-            self.rules_controller.remove_rules(rules)
+        with self._open_window(gui.RuleRemovingWindow(active_rules)) as window:
+            rules = window.run()
+
+            if rules:
+                self.rules_controller.remove_rules(rules)
 
     @execute_in_main_thread()
     def choose_window_to_remove_rules(self):
@@ -64,12 +88,15 @@ class InteractionManager:
         if not candidates:
             return
 
-        winfo = (gui.ChooseRemoveCandidateWindow(candidates).run()
-                 if len(candidates) != 1
-                 else candidates[0])
+        if len(candidates) == 1:
+            self.delete_current_app(candidates[0])
+            return
 
-        if winfo:
-            self.delete_current_app(winfo)
+        with self._open_window(gui.ChooseRemoveCandidateWindow(candidates)) as window:
+            winfo = window.run()
+
+            if winfo:
+                self.delete_current_app(winfo)
 
     @execute_in_main_thread()
     def choose_window_to_make_rule(self):
@@ -77,18 +104,21 @@ class InteractionManager:
             return
 
         candidates = list(self.state_controller.last_active_windows)
-        winfo = (gui.ChooseAppendCandidateWindow(candidates).run()
-                 if len(candidates) != 1
-                 else candidates[0])
 
-        if winfo:
-            self.append_current_app(winfo)
+        if len(candidates) == 1:
+            self.append_current_app(candidates[0])
+            return
+
+        with self._open_window(gui.ChooseAppendCandidateWindow(candidates)) as window:
+            winfo = window.run()
+
+            if winfo:
+                self.append_current_app(winfo)
 
     @execute_in_main_thread()
     def request_update(self,
                        latest,
                        file_size,
                        response: Queue):
-        response.put_nowait(gui.UpdateRequestWindow(
-            latest, file_size
-        ).run())
+        with self._open_window(gui.UpdateRequestWindow(latest, file_size)) as window:
+            response.put_nowait(window.run())

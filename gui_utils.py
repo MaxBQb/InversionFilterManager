@@ -137,7 +137,7 @@ class BaseNonBlockingWindow:
 
     def _close_dependent(self):
         for dependent in self.dependent_windows:
-            dependent.close()
+            dependent.send_close_event()
 
     def run(self):
         """
@@ -173,6 +173,10 @@ class BaseNonBlockingWindow:
     def close(self):
         self._close_dependent()
         self.window.close()
+
+    def send_close_event(self):
+        if not self.window.was_closed():
+            self.close()
 
     def init_window(self, **kwargs):
         self.window = sg.Window(
@@ -231,6 +235,10 @@ class BaseInteractiveWindow(BaseNonBlockingWindow):
     def close(self):
         self.is_running = False
         self._close_dependent()
+
+    def send_close_event(self):
+        if not self.window.was_closed():
+            self.window.write_event_value(sg.WIN_CLOSED, None)
 
     def set_handlers(self):
         self.add_event_handlers(
