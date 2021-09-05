@@ -66,7 +66,7 @@ class Tray:
         try:
             await to_thread(self.run)
         finally:
-            self.tray.close()
+            self.close()
 
     def close(self):
         if self.tray:
