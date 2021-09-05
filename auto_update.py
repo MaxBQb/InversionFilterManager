@@ -7,7 +7,7 @@ from queue import Queue
 import inject
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
-from _meta import IndirectDependency, __developer_mode__
+from _meta import IndirectDependency, __developer_mode__, APP_DIR
 from interaction import InteractionManager
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -190,7 +190,8 @@ class AutoUpdater:
         if self.update_in_progress:
             return
         self.update_in_progress = True
-        app_path = os.path.dirname(sys.argv[0])
+        app_path = APP_DIR
+        os.chdir(app_path)
 
         if not check_write_access(app_path):
             return

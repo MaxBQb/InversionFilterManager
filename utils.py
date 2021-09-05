@@ -1,4 +1,5 @@
 import os
+from _meta import APP_DIR
 import re
 import subprocess
 
@@ -144,3 +145,7 @@ def public_fields(object):
         for k, v in vars(object).items()
         if not k.startswith('_')
     )
+
+
+def app_abs_path(path: str):
+    return os.path.join(APP_DIR, os.path.normpath(path))

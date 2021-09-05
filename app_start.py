@@ -1,9 +1,10 @@
 import asyncio
+import os
 import inject
 from active_window_checker import FilterStateController
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
-from _meta import IndirectDependency
+from _meta import IndirectDependency, APP_DIR
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
@@ -22,6 +23,7 @@ class AppStartManager:
     tray = inject.attr(Tray)
 
     def setup(self):
+        os.chdir(APP_DIR)
         self.settings_controller.setup()
         self.inversion_rules.setup()
         self.state_controller.setup()

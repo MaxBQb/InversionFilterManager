@@ -9,8 +9,8 @@ from abc import ABC
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer as DirectoryObserver
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
-from _meta import IndirectDependency
-
+from _meta import IndirectDependency, APP_DIR
+from utils import app_abs_path
 
 T = TypeVar('T')
 
@@ -38,7 +38,7 @@ class DataFileSyncer(Generic[T]):
         carryon.append(self.filename)
 
     def _watch_file(self):
-        handler = PatternMatchingEventHandler(patterns=[".\\" + self.filename],
+        handler = PatternMatchingEventHandler(patterns=[app_abs_path(self.filename)],
                                               case_sensitive=True)
 
         def on_modified(event):
@@ -47,7 +47,7 @@ class DataFileSyncer(Generic[T]):
             self.load_file()
 
         handler.on_modified = on_modified
-        self.dir_observer.schedule(handler, ".")
+        self.dir_observer.schedule(handler, APP_DIR)
         self.dir_observer.start()
 
     def load_file(self):
@@ -56,7 +56,7 @@ class DataFileSyncer(Generic[T]):
             return
 
         with self.dir_observer.overlook():
-            with open(self.filename, encoding="utf-8-sig") as f:
+            with open(app_abs_path(self.filename), encoding="utf-8-sig") as f:
                 new_data: T = self._load(f)
 
         if new_data is None:
@@ -75,7 +75,7 @@ class DataFileSyncer(Generic[T]):
 
     def save_file(self):
         with self.dir_observer.overlook():
-            with open(self.filename, "w", encoding="utf-8") as f:
+            with open(app_abs_path(self.filename), "w", encoding="utf-8") as f:
                 self._dump(f)
 
     def _dump(self, stream):

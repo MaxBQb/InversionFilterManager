@@ -1,7 +1,7 @@
 from typing import Callable, Any
 import PySimpleGUI as sg
 from _meta import __product_name__ as app_name
-from utils import StrHolder, max_len
+from utils import StrHolder, max_len, app_abs_path
 
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
@@ -36,9 +36,9 @@ INPUT_EXTRA_DEFAULTS = dict(
 def init_theme():
     sg.theme("DarkGray13")
     sg.set_options(
-        titlebar_icon="img/inversion_manager.png",
+        titlebar_icon=app_abs_path("img/inversion_manager.png"),
         titlebar_font=("Tahoma", 12),
-        icon="img/inversion_manager.png",
+        icon=app_abs_path("img/inversion_manager.png"),
     )
 
 

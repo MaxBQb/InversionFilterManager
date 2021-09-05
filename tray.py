@@ -11,7 +11,7 @@ from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from settings import UserSettingsController
-from utils import explore
+from utils import explore, app_abs_path
 
 
 def make_toggle(out_func=None, default_value=False):
@@ -57,7 +57,7 @@ class Tray:
     def run(self):
         self.tray = Icon(
             app.__product_name__,
-            Image.open(app.__icon__),
+            Image.open(app_abs_path(app.__icon__)),
             menu=self.build_menu()
         )
         self.tray.run()
@@ -105,11 +105,15 @@ class Tray:
                 ref('Open'),
                 Menu(
                     MenuItem(ref('Work directory'),
-                             _open(".")),
+                             _open(app.APP_DIR)),
                     MenuItem(ref('Settings file'),
-                             _open(self.settings_controller.filename)),
+                             _open(app_abs_path(
+                                 self.settings_controller.filename
+                             ))),
                     MenuItem(ref('Inversion rules file'),
-                             _open(self.inversion_rules.filename))
+                             _open(app_abs_path(
+                                 self.inversion_rules.filename
+                             )))
                 )
             ),
             MenuItem(

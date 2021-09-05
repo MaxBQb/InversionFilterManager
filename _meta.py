@@ -14,3 +14,12 @@ __instance_lock_key__ = 'InversionManager by MaxBQb app instance lock|7171670340
 class IndirectDependency(Enum):
     SETTINGS_CONTROLLER = auto()
     CARRYON_BEFORE_UPDATE = auto()
+
+
+def get_app_dir():
+    import os
+    return os.path.dirname(os.path.abspath(sys.argv[0]))
+
+
+APP_DIR = get_app_dir()
+del get_app_dir

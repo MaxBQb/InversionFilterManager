@@ -169,7 +169,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
                     visible=False
                 ),
                 sg.Button(
-                    image_filename="./img/browse.png",
+                    image_filename=utils.app_abs_path("img/browse.png"),
                     tooltip="Browse path (will overwrite current path)",
                     **guitils.ICON_BUTTON_DEFAULTS(),
                     button_type=sg.BUTTON_TYPE_BROWSE_FILE,
