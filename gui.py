@@ -200,15 +200,11 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         ]
 
     def dynamic_build(self):
-        inputs = (
+        self._inputs += [
             self.ID.INPUT_TITLE,
             self.ID.INPUT_PATH,
             self.ID.INPUT_NAME
-        )
-        for input in inputs:
-            self.window[input].Widget.config(
-                **guitils.INPUT_EXTRA_DEFAULTS
-            )
+        ]
         super().dynamic_build()
 
     def set_handlers(self):
