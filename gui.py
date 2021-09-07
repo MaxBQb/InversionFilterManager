@@ -76,7 +76,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         super().init_window(element_padding=(6, 6))
 
     def build_layout(self):
-        name = self.winfo.name.removesuffix(".exe").title()
+        name = self.winfo.name.capitalize().removesuffix(".exe")
         self.path_button = MultiStateButton(
             self.path_button_options,
             self.ID.BUTTON_PATH,
