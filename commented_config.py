@@ -1,6 +1,7 @@
 from dataclasses import Field, MISSING
 from io import StringIO
 from types import GenericAlias
+from typing import Optional
 
 COMMENT = '#'
 
@@ -16,8 +17,9 @@ def _get_last_key(source: dict[str]):
 def split_on_comment_lines(text: str):
     if text is None:
         return
+
     return tuple(
-        f"{COMMENT} {line.strip()}\n"
+        f"{COMMENT} {line.lstrip(' ').rstrip()}\n"
         for line in text.strip().splitlines()
     )
 
@@ -72,10 +74,19 @@ class CommentsHolder:
     def __init__(self):
         self.content: dict[str] = dict()
 
-    def add(self, comment: str,
+    def add(self, comment: Optional[str],
             outer_scope_locals: dict[str],
             include_docstring=False,
             inner_comments='_comments_'):
+        """
+        Adds comment to specific attribute
+        :param comment: Any text, use {name}, {type},
+        {typename} and {default} as placeholders
+        :param outer_scope_locals: Must be locals()
+        :param include_docstring: Use docstrings of attribute class
+        :param inner_comments: Name of inner attribute comments to find
+        """
+
         info = _VariableInfo(outer_scope_locals)
         comment = self._get_comment_text(info, comment,
                                          include_docstring)
