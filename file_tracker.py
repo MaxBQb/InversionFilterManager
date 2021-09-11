@@ -1,7 +1,7 @@
 import os
 from contextlib import contextmanager, suppress
 from time import time
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, TextIO
 import inject
 import jsons
 import yaml
@@ -67,7 +67,7 @@ class DataFileSyncer(Generic[T]):
             self.data = new_data
             self.on_file_reloaded()
 
-    def _load(self, stream):
+    def _load(self, stream: TextIO):
         with suppress(jsons.DeserializationError, yaml.YAMLError):
             return jsons.load(yaml.load(
                 stream, yaml.CSafeLoader
@@ -78,7 +78,7 @@ class DataFileSyncer(Generic[T]):
             with open(app_abs_path(self.filename), "w", encoding="utf-8") as f:
                 self._dump(f)
 
-    def _dump(self, stream):
+    def _dump(self, stream: TextIO):
         yaml.dump(jsons.dump(self.data, **self.JSON_DUMPER_KWARGS),
                   stream, yaml.CSafeDumper, **self.YAML_DUMPER_KWARGS)
 

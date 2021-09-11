@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, TextIO
 from active_window_checker import WinTrackerSettings
 from auto_update import AutoUpdateSettings
 from color_filter import ColorFilterSettings
@@ -65,7 +65,7 @@ class ConfigSyncer(DataFileSyncer):
         strip_properties=True
     )
 
-    def _dump(self, stream):
+    def _dump(self, stream: TextIO):
         writer = CommentsWriter()
         super()._dump(writer.input_stream)
         writer.dump(stream, get_comments_holder(self._class))

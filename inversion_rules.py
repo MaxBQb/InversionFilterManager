@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TextIO
+from commented_config import CommentsHolder, get_comments_holder
 from file_tracker import DataFileSyncer, Syncable
 
 if TYPE_CHECKING:
@@ -21,14 +22,53 @@ class InversionRule:
     If information given matches with filters
     then rule is active
     """
+    _comments_ = CommentsHolder()
+    __comment_base = "{{name}}: {{typename}}" \
+                     "{}Example: {{name}}: {}"
 
     path: str = None
+    _comments_.add(__comment_base.format("""
+        Match plain path text
+        Conflict with path_regex
+    """, "C:\Windows\explorer.exe"), locals())
+
     path_regex: str = None
+    _comments_.add(__comment_base.format("""
+        Match path with regular expression
+        Conflict with path
+    """, "C:\\Program\ Files\\Microsoft\ Office\\root\\Office\d+\\WINWORD\.EXE"), locals())
+
     title: str = None
+    _comments_.add(__comment_base.format("""
+        Match plain title text
+        Conflict with title_regex
+    """, "TeamViewer options"), locals())
+
     title_regex: str = None
+    _comments_.add(__comment_base.format("""
+        Match title with regular expression
+        Conflict with title
+    """, ".?Ramus.*"), locals())
+
     look_for_title: LookForTitle = None
+    _comments_.add(__comment_base.format(f"""
+        Source of title: {' | '.join(e.name for e in LookForTitle)}
+        \t{LookForTitle.ANY.name} - windows from root to current
+        \t{LookForTitle.ROOT.name} - Main window
+        \t{LookForTitle.CURRENT.name} - Current window (or text element)
+    """, LookForTitle.ANY.name), locals())
+
     exclude: bool = None
+    _comments_.add(__comment_base.format("""
+        If this rule is active, 
+        then no inversion needed
+    """, "false"), locals())
+
     remember_processes: bool = None
+    _comments_.add(__comment_base.format("""
+        Once this rule is active, 
+        pid of target app will always activate rule,
+    """, "false"), locals())
 
     def __post_init__(self):
         if self.remember_processes:
@@ -174,8 +214,9 @@ class RulesSyncer(DataFileSyncer):
         strip_nulls=True
     )
 
-    def _dump(self, stream):
-        if not self.data:
-            stream.truncate(0)
-        else:
+    def _dump(self, stream: TextIO):
+        for comments in get_comments_holder(InversionRule).content.values():
+            stream.writelines([*comments, "\n"])
+
+        if self.data:
             super()._dump(stream)
