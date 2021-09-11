@@ -33,8 +33,6 @@ class InversionRule:
     def __post_init__(self):
         if self.remember_processes:
             self._pids = set()
-        else:
-            self.is_active = self._is_active
 
         self.exclude = self.exclude or None
 
@@ -54,13 +52,16 @@ class InversionRule:
         self._path_regex = try_compile(self.path_regex)
 
     def is_active(self, info: 'WindowInfo') -> bool:
-        if self._is_active(info):
+        active = (self.check_path(info)
+                  and self.check_title(info))
+
+        if not self.remember_processes:
+            return active
+
+        if active:
             self._pids.add(info.pid)
 
         return info.pid in self._pids
-
-    def _is_active(self, info: 'WindowInfo') -> bool:
-        return self.check_path(info) and self.check_title(info)
 
     def check_path(self, info: 'WindowInfo'):
         return check_text(info.path, self.path, self._path_regex)
