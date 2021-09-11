@@ -1,6 +1,6 @@
 from asyncio import run
 import inject
-from bootstrap import try_request_admin_rights
+from uac import try_request_admin_rights
 from app_start import AppStartManager
 import win32event
 import win32api

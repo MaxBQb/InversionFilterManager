@@ -6,6 +6,7 @@ import win32console
 from PIL import Image
 from pystray import Menu, MenuItem, Icon
 import _meta as app
+from uac import has_admin_rights
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
@@ -93,7 +94,8 @@ class Tray:
         im = self.im
         return Menu(
             MenuItem(
-                f'{app.__product_name__} v{app.__version__}',
+                f'{app.__product_name__} v{app.__version__}'
+                + (" (Admin)" if has_admin_rights() else ""),
                 None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(

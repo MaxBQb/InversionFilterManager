@@ -27,10 +27,14 @@ ERRORS = {
 }
 
 
+def has_admin_rights():
+    return shell.IsUserAnAdmin()
+
+
 def request_admin_rights() -> bool:
     # msdn.microsoft.com/en-us/library/windows/desktop/bb762153(v=vs.85).aspx
     from win32con import SW_HIDE
-    if shell.IsUserAnAdmin():
+    if has_admin_rights():
         return False
     hinstance = shell.ShellExecuteW(
         None, 'runas', sys.executable, sys.argv[0], None, SW_HIDE
