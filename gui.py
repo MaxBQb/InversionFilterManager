@@ -23,13 +23,16 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         BUTTON_TITLE: str
         BUTTON_LOOK_FOR_TITLE: str
         BUTTON_EXCLUSIVE_RULE: str
+        BUTTON_REMEMBER_PROCESSES: str
         BUTTON_PATH: str
         BUTTON_PATH_BROWSE: str
         LABEL_ERROR: str
         LABEL_TITLE: str
         LABEL_PATH: str
+        LABEL_PID: str
         INPUT_TITLE: str
         INPUT_PATH: str
+        INPUT_PID: str
         INPUT_PATH_BROWSED: str
         INPUT_NAME: str
 
@@ -64,6 +67,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         self.title_button: MultiStateButton = None
         self.look_for_title_button: MultiStateButton = None
         self.exclusive_rule: Switcher = None
+        self.remember_processes: Switcher = None
         self.name: str = None
         self.rule: InversionRule = None
         self.path_ref = [self.winfo.path]
@@ -117,6 +121,22 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
                 button_color="#FF4500",
             ),
             self.ID.BUTTON_EXCLUSIVE_RULE,
+            self.common_options,
+        )
+        self.remember_processes = Switcher(
+            dict(
+                tooltip="Remember process if rule applies,\n"
+                        "then acts as if each window of this process\n"
+                        "corresponds this rule",
+                button_text="REMEMBER",
+                button_color="#FF4500",
+            ),
+            dict(
+                tooltip="Skip process matching",
+                button_text="DISABLED",
+                button_color="#2F4F4F",
+            ),
+            self.ID.BUTTON_REMEMBER_PROCESSES,
             self.common_options,
         )
         label_options = dict(
@@ -197,12 +217,28 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
                 self.title_button.button,
                 self.look_for_title_button.button,
             ],
+            [
+                sg.Text(
+                    "PID",
+                    key=self.ID.LABEL_PID,
+                    **label_options
+                ),
+                sg.InputText(
+                    tooltip="Process ID (Read only)",
+                    default_text=self.winfo.pid,
+                    key=self.ID.INPUT_PID,
+                    disabled=True,
+                    **guitils.INPUT_DEFAULTS
+                ),
+                self.remember_processes.button,
+            ]
         ]
 
     def dynamic_build(self):
         self._inputs += [
             self.ID.INPUT_TITLE,
             self.ID.INPUT_PATH,
+            self.ID.INPUT_PID,
             self.ID.INPUT_NAME
         ]
         super().dynamic_build()
@@ -257,6 +293,10 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.exclusive_rule.event_handler
         )
         self.add_event_handlers(
+            self.remember_processes.key,
+            self.remember_processes.event_handler
+        )
+        self.add_event_handlers(
             self.ID.INPUT_PATH_BROWSED,
             self.on_browse_path
         )
@@ -304,7 +344,8 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
             self.look_for_title_button.selected,
-            self.exclusive_rule.selected
+            self.exclusive_rule.selected,
+            self.remember_processes.selected
         )
         self.close()
 

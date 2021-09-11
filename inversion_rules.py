@@ -28,8 +28,14 @@ class InversionRule:
     title_regex: str = None
     look_for_title: LookForTitle = None
     exclude: bool = None
+    remember_processes: bool = None
 
     def __post_init__(self):
+        if self.remember_processes:
+            self._pids = set()
+        else:
+            self.is_active = self._is_active
+
         self.exclude = self.exclude or None
 
         if self.path is not None:
@@ -48,6 +54,12 @@ class InversionRule:
         self._path_regex = try_compile(self.path_regex)
 
     def is_active(self, info: 'WindowInfo') -> bool:
+        if self._is_active(info):
+            self._pids.add(info.pid)
+
+        return info.pid in self._pids
+
+    def _is_active(self, info: 'WindowInfo') -> bool:
         return self.check_path(info) and self.check_title(info)
 
     def check_path(self, info: 'WindowInfo'):
