@@ -2,7 +2,7 @@ import sys
 from enum import Enum, auto
 
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 __product_name__ = "InversionFilterManager"
 __author__ = "MaxBQb"
 __icon__ = "img/inversion_manager.ico"
