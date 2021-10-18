@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import cached_property
 from typing import TypeVar, Generic, Any
 import PySimpleGUI as sg
@@ -40,7 +41,7 @@ class MultiStateButton(Generic[T]):
         for state in self.states:
             # default param set + 2-level copy
             self.options[state] = dict(
-                button_text=state,
+                button_text=state if not isinstance(state, Enum) else state.name,
             ) | self.options[state]
 
     @cached_property

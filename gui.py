@@ -94,16 +94,13 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         self.look_for_title_button = MultiStateButton({
                 LookForTitle.CURRENT: dict(
                     tooltip="Use title from current window",
-                    button_text="CURRENT"
                 ),
                 LookForTitle.ROOT: dict(
                     tooltip="Use title from main (root) window",
-                    button_text="ROOT"
                 ),
                 LookForTitle.ANY: dict(
                     tooltip="Use any title from current "
                             "to root window",
-                    button_text="ANY"
                 )
             },
             self.ID.BUTTON_LOOK_FOR_TITLE,
