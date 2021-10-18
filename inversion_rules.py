@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING, TextIO, Optional
 from commented_config import CommentsHolder, get_comments_holder
 from file_tracker import DataFileSyncer, Syncable
 
@@ -13,6 +13,12 @@ class LookForTitle(Enum):
     ANY = auto()
     CURRENT = auto()
     ROOT = auto()
+
+
+class RuleType(Enum):
+    INCLUDE = auto()
+    EXCLUDE = auto()
+    IGNORE = auto()
 
 
 @dataclass
@@ -58,11 +64,13 @@ class InversionRule:
         \t{LookForTitle.CURRENT.name} - Current window (or text element)
     """, LookForTitle.ANY.name), locals())
 
-    exclude: bool = None
-    _comments_.add(__comment_base.format("""
-        If this rule is active, 
-        then no inversion needed
-    """, "false"), locals())
+    type: RuleType = None
+    _comments_.add(__comment_base.format(f"""
+         Type of rule: {' | '.join(e.name for e in RuleType)}
+        \t{RuleType.INCLUDE.name} - if this rule is active, then inversion needed
+        \t{RuleType.EXCLUDE.name} - if this rule is active, then no inversion needed
+        \t{RuleType.IGNORE.name} - if this rule is active, then do nothing
+    """, RuleType.INCLUDE.name), locals())
 
     remember_processes: bool = None
     _comments_.add(__comment_base.format("""
@@ -74,7 +82,9 @@ class InversionRule:
         if self.remember_processes:
             self._pids = set()
 
-        self.exclude = self.exclude or None
+        self._type = self.type or RuleType.INCLUDE
+        if self.type == RuleType.INCLUDE:
+            self.type = None
 
         if self.path is not None:
             self.path_regex = None
@@ -90,6 +100,9 @@ class InversionRule:
 
         self._title_regex = try_compile(self.title_regex)
         self._path_regex = try_compile(self.path_regex)
+
+    def get_type(self):
+        return self._type
 
     def is_active(self, info: 'WindowInfo') -> bool:
         active = (self.check_path(info)
@@ -134,12 +147,15 @@ class InversionRulesController(Syncable):
     if no active rules found or
     if there are some excluded active rules
     Recommends to turn filter off, otherwise: on
+    if there are some ignored active rules
+    Recommends to do nothing
     """
 
     def __init__(self):
         self.rules: RULES = dict()
         self.included: RULES = dict()
         self.excluded: RULES = dict()
+        self.ignored: RULES = dict()
         super().__init__(RulesSyncer("inversion_rules", self.rules, RULES))
         self._syncer.on_file_reloaded = lambda: self.load_rules(self._syncer.data)
 
@@ -149,7 +165,7 @@ class InversionRulesController(Syncable):
 
     def load_rules(self, rules: RULES):
         self.rules = rules
-        self.included, self.excluded = dict(), dict()
+        self.included, self.excluded, self.ignored = dict(), dict(), dict()
         for name, rule in rules.items():
             self._detect_accessory(rule)[name] = rule
         self.on_rules_changed()
@@ -170,11 +186,16 @@ class InversionRulesController(Syncable):
         self._syncer.save_file()
         self.on_rules_changed()
 
-    def is_inversion_required(self, info: 'WindowInfo'):
-        return (
-            self.has_active_rules(info, self.included) and
-            not self.has_active_rules(info, self.excluded)
+    def is_inversion_required(self, info: 'WindowInfo') -> Optional[bool]:
+        possibilities = (
+            (self.ignored, None),
+            (self.excluded, False),
+            (self.included, True),
         )
+        for rules, result in possibilities:
+            if self.has_active_rules(info, rules):
+                return result
+        return False
 
     def has_active_rules(self, info: 'WindowInfo', rules: RULES = None):
         if rules is None:
@@ -187,9 +208,11 @@ class InversionRulesController(Syncable):
                 if rules[name].is_active(info))
 
     def _detect_accessory(self, rule: InversionRule):
-        if rule.exclude:
-            return self.excluded
-        return self.included
+        return {
+            RuleType.INCLUDE: self.included,
+            RuleType.EXCLUDE: self.excluded,
+            RuleType.IGNORE: self.ignored,
+        }.get(rule.get_type())
 
     def on_rules_changed(self):
         pass

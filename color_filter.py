@@ -47,6 +47,9 @@ def get_filter_type():
 
 
 def set_active(value):
+    if value is None:
+        return
+
     if value != is_active():
         toggle()
 

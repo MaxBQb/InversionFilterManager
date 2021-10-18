@@ -7,7 +7,7 @@ import gui_utils as guitils
 import utils
 from active_window_checker import WindowInfo
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
-from inversion_rules import InversionRule, InversionRulesController, LookForTitle
+from inversion_rules import InversionRule, InversionRulesController, LookForTitle, RuleType
 
 
 class RuleCreationWindow(guitils.BaseInteractiveWindow):
@@ -66,7 +66,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         self.path_button: MultiStateButton = None
         self.title_button: MultiStateButton = None
         self.look_for_title_button: MultiStateButton = None
-        self.exclusive_rule: Switcher = None
+        self.rule_type: MultiStateButton = None
         self.remember_processes: Switcher = None
         self.name: str = None
         self.rule: InversionRule = None
@@ -106,17 +106,21 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.ID.BUTTON_LOOK_FOR_TITLE,
             self.common_options,
         )
-        self.exclusive_rule = Switcher(
-            dict(
-                tooltip="DISABLE color inversion filter if window match",
-                button_text="EXCLUDE",
-                button_color="#2F4F4F",
-            ),
-            dict(
-                tooltip="ENABLE color inversion filter if window match",
-                button_text="INCLUDE",
-                button_color="#FF4500",
-            ),
+        self.rule_type = MultiStateButton(
+            {
+                RuleType.INCLUDE: dict(
+                    tooltip="ENABLE color inversion filter if window match",
+                    button_color="#FF4500",
+                ),
+                RuleType.EXCLUDE: dict(
+                    tooltip="DISABLE color inversion filter if window match",
+                    button_color="#8B0000",
+                ),
+                RuleType.IGNORE: dict(
+                    tooltip="DON'T CHANGE color inversion filter if window match",
+                    button_color="#2F4F4F",
+                ),
+            },
             self.ID.BUTTON_EXCLUSIVE_RULE,
             self.common_options,
         )
@@ -162,7 +166,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
                     key=self.ID.INPUT_NAME,
                     **guitils.INPUT_DEFAULTS
                 ),
-                self.exclusive_rule.button,
+                self.rule_type.button,
             ],
             [
                 sg.Text(
@@ -286,8 +290,8 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.look_for_title_button.event_handler
         )
         self.add_event_handlers(
-            self.exclusive_rule.key,
-            self.exclusive_rule.event_handler
+            self.rule_type.key,
+            self.rule_type.event_handler
         )
         self.add_event_handlers(
             self.remember_processes.key,
@@ -341,7 +345,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             *get_keys(self.path_button, self.ID.INPUT_PATH),
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
             self.look_for_title_button.selected,
-            self.exclusive_rule.selected,
+            self.rule_type.selected,
             self.remember_processes.selected
         )
         self.close()
