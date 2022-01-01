@@ -44,7 +44,7 @@ def execute_in_main_thread(priority: int = 10):
                 return func(*args, **kwargs)
 
             inject.instance(MainExecutor).send_callback(Callback(
-                lambda: func(*args, **kwargs)
+                (lambda: func(*args, **kwargs))
                 if args or kwargs else func,
                 priority
             ))
