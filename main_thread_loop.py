@@ -2,7 +2,10 @@ import threading
 from dataclasses import dataclass, field
 from queue import PriorityQueue
 from typing import Callable
+
 import inject
+
+from utils import show_exceptions
 
 
 @dataclass(order=True)
@@ -25,8 +28,9 @@ class MainExecutor:
             raise RuntimeError()
 
         while self._alive:
-            callback = self.callbacks.get()
-            callback.func()
+            with show_exceptions():
+                callback = self.callbacks.get()
+                callback.func()
 
     def send_callback(self, callback: Callback):
         self.callbacks.put_nowait(callback)

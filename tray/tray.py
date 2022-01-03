@@ -1,21 +1,23 @@
 from asyncio import to_thread
-from traceback import print_exc
+from contextlib import closing
+
 import inject
-import win32gui
-from win32con import SW_HIDE, SW_SHOW
 import win32console
+import win32gui
 from PIL import Image
 from pystray import Menu, MenuItem, Icon
+from win32con import SW_HIDE, SW_SHOW
+
 import _meta as app
 from active_window_checker import AppMode
-from tray.utils import ref, make_toggle, make_radiobutton
-from uac import has_admin_rights
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
-from settings import UserSettingsController, UserSettings, OPTION_PATH, OPTION_CHANGE_HANDLER, T
-from utils import explore, app_abs_path
+from settings import UserSettingsController, OPTION_PATH, OPTION_CHANGE_HANDLER, T
+from tray.utils import ref, make_toggle, make_radiobutton
+from uac import has_admin_rights
+from utils import explore, app_abs_path, show_exceptions
 
 
 class Tray:
@@ -39,23 +41,18 @@ class Tray:
         ))
         win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
 
+    @show_exceptions()
     def run(self):
-        try:
-            self.tray = Icon(
-                app.__product_name__,
-                Image.open(app_abs_path(app.__icon__)),
-                menu=self.build_menu()
-            )
-            self.tray.run()
-        except:
-            print_exc()
-            raise
+        self.tray = Icon(
+            app.__product_name__,
+            Image.open(app_abs_path(app.__icon__)),
+            menu=self.build_menu()
+        )
+        self.tray.run()
 
     async def run_async(self):
-        try:
+        with closing(self):
             await to_thread(self.run)
-        finally:
-            self.close()
 
     def close(self):
         if self.tray:

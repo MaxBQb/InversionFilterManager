@@ -1,8 +1,11 @@
+import contextlib
 import os
-from _meta import APP_DIR
 import re
 import subprocess
+import threading
+from traceback import print_exc
 
+from _meta import APP_DIR, __developer_mode__
 
 FILEBROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
 
@@ -149,3 +152,14 @@ def public_fields(object):
 
 def app_abs_path(path: str):
     return os.path.join(APP_DIR, os.path.normpath(path))
+
+
+@contextlib.contextmanager
+def show_exceptions():
+    try:
+        yield
+    except:
+        if __developer_mode__:
+            print("in Tread:", threading.current_thread().name)
+            print_exc()
+        raise

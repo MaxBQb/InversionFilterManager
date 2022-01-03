@@ -24,6 +24,7 @@ import color_filter
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
 from inversion_rules import InversionRulesController
+from utils import show_exceptions
 
 user32 = ctypes.windll.user32
 ole32 = ctypes.windll.ole32
@@ -174,6 +175,7 @@ def titles(iterable):
         yield win32gui.GetWindowText(hwnd)
 
 
+@show_exceptions()
 @inject.autoparams()
 def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoInitialize(0)
