@@ -193,6 +193,7 @@ def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoUninitialize()
 
 
+@dataclass
 class WinTrackerSettings:
     """
     Specifies interaction with windows events

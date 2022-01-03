@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Callable, TypeVar, TextIO
 from active_window_checker import WinTrackerSettings
@@ -31,35 +32,41 @@ class UserSettingsController(Syncable):
         super().__init__(ConfigSyncer("settings", UserSettings()))
         self._syncer.on_file_reloaded = self.on_settings_changed
         self._change_handlers: list[tuple[OPTION_PATH, OPTION_CHANGE_HANDLER]] = list()
-        self._old_data = None
+        self._old_data = deepcopy(self.settings)
+        self._loaded_data = deepcopy(self.settings)
 
     def setup(self):
         self._syncer.start()
         self._syncer.preserve_on_update()
 
     @property
-    def settings(self):
+    def settings(self) -> UserSettings:
         return self._syncer.data
 
     def on_settings_changed(self):
-        if self._old_data is None:
-            self._old_data = self._syncer.data
-            return
-
+        self._loaded_data = deepcopy(self.settings)
         for path, handler in self._change_handlers:
-            new_value = path(self._syncer.data)
+            new_value = path(self.settings)
             if path(self._old_data) != new_value:
                 handler(new_value)
+        self._old_data = deepcopy(self.settings)
 
-        self._old_data = self._syncer.data
+    def save(self):
+        if self._loaded_data != self.settings:
+            super().save()
+            self._loaded_data = deepcopy(self.settings)
+            self._old_data = deepcopy(self.settings)
 
     def add_option_change_handler(self,
                                   path: OPTION_PATH,
-                                  handler: OPTION_CHANGE_HANDLER):
+                                  handler: OPTION_CHANGE_HANDLER,
+                                  initial=False):
         self._change_handlers.append((path, handler))
+        if initial:
+            handler(path(self._syncer.data))
 
 
-class ConfigSyncer(DataFileSyncer):
+class ConfigSyncer(DataFileSyncer[UserSettings]):
     JSON_DUMPER_KWARGS = dict(
         strip_privates=True,
         strip_properties=True
