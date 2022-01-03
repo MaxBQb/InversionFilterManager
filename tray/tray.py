@@ -1,4 +1,5 @@
 from asyncio import to_thread
+from traceback import print_exc
 import inject
 import win32gui
 from win32con import SW_HIDE, SW_SHOW
@@ -6,32 +7,15 @@ import win32console
 from PIL import Image
 from pystray import Menu, MenuItem, Icon
 import _meta as app
+from active_window_checker import AppMode
+from tray.utils import ref, make_toggle, make_radiobutton
 from uac import has_admin_rights
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
-from settings import UserSettingsController
+from settings import UserSettingsController, UserSettings, OPTION_PATH, OPTION_CHANGE_HANDLER, T
 from utils import explore, app_abs_path
-
-
-def make_toggle(out_func=None, default_value=False):
-    def decorator(func):
-        def wrapper(self):
-            value = [default_value]
-
-            def get_value(item):
-                return value[0]
-
-            def toggle():
-                value[0] ^= True
-                func(self, value[0])
-
-            return toggle, get_value
-        return wrapper
-    if out_func:
-        return decorator(out_func)
-    return decorator
 
 
 class Tray:
@@ -56,12 +40,16 @@ class Tray:
         win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
 
     def run(self):
-        self.tray = Icon(
-            app.__product_name__,
-            Image.open(app_abs_path(app.__icon__)),
-            menu=self.build_menu()
-        )
-        self.tray.run()
+        try:
+            self.tray = Icon(
+                app.__product_name__,
+                Image.open(app_abs_path(app.__icon__)),
+                menu=self.build_menu()
+            )
+            self.tray.run()
+        except:
+            print_exc()
+            raise
 
     async def run_async(self):
         try:
@@ -82,14 +70,12 @@ class Tray:
         def _open(path):
             return callback(explore, path)
 
-        def ref(text: str):
-            """
-            Make first letter underscored, also
-            mark this letter as shortcut for system tray,
-            so you may press this letter on keyboard
-            to select corresponding menu item
-            """
-            return f'&{text[0]}\u0332{text[1:]}'
+        change_mode_menu, change_mode_setter = self.change_mode()
+
+        self._link_with_settings(
+            lambda settings: settings.win_tracker.mode,
+            change_mode_setter
+        )
 
         im = self.im
         return Menu(
@@ -101,6 +87,10 @@ class Tray:
             MenuItem(
                 ref("Show console"),
                 *self.toggle_console()
+            ),
+            MenuItem(
+                ref("Mode"),
+                change_mode_menu
             ),
             Menu.SEPARATOR,
             MenuItem(
@@ -124,7 +114,7 @@ class Tray:
                     MenuItem(ref('Settings file'),
                              callback(self.settings_controller.load)),
                     MenuItem(ref('Inversion rules file'),
-                             callback(self.settings_controller.load)),
+                             callback(self.inversion_rules.load)),
                 )
             ),
             Menu.SEPARATOR,
@@ -140,9 +130,29 @@ class Tray:
                      callback(self.close_manager.close)),
         )
 
+    def _link_with_settings(self,
+                            path: OPTION_PATH,
+                            handler: OPTION_CHANGE_HANDLER,):
+        def new_handler(value: T):
+            handler(value)
+            if self.tray:
+                self.tray.update_menu()
+
+        self.settings_controller.add_option_change_handler(
+            path, new_handler, True
+        )
+
     @make_toggle
     def toggle_console(self, value):
         win32gui.ShowWindow(
             self.console_hwnd,
             SW_SHOW if value else SW_HIDE
         )
+
+    @make_radiobutton({
+        AppMode.DISABLE: ref("Ignore All"),
+        AppMode.RULES: ref("According with rules"),
+    }, AppMode.RULES)
+    def change_mode(self, value: AppMode):
+        self.settings_controller.settings.win_tracker.mode = value
+        self.settings_controller.save()

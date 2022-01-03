@@ -14,6 +14,7 @@ import ctypes.wintypes
 import sys
 from asyncio import to_thread
 from dataclasses import dataclass
+from enum import Enum, auto
 from functools import cached_property
 import inject
 import win32con
@@ -193,6 +194,11 @@ def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoUninitialize()
 
 
+class AppMode(Enum):
+    DISABLE = auto()
+    RULES = auto()
+
+
 @dataclass
 class WinTrackerSettings:
     """
@@ -203,6 +209,13 @@ class WinTrackerSettings:
     show_events: bool = False
     _comments_.add("""
        [{default!r}] Display all window switch events
+    """, locals())
+
+    mode: AppMode = AppMode.RULES
+    _comments_.add(f"""
+        [{{default.name}}] How to process events: {' | '.join(e.name for e in AppMode)}
+        \t{AppMode.DISABLE.name} - Ignore all events
+        \t{AppMode.RULES.name} - Use rules to determine what to do
     """, locals())
 
 
@@ -249,4 +262,8 @@ class FilterStateController:
     def update_filter_state(self, winfo: WindowInfo = None):
         if winfo is None:
             winfo = self.last_active_window
-        color_filter.set_active(self.rules.is_inversion_required(winfo))
+
+        mode = self.config.mode
+
+        if mode == AppMode.RULES:
+            color_filter.set_active(self.rules.is_inversion_required(winfo))

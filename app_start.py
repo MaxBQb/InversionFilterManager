@@ -9,7 +9,7 @@ from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
 from settings import UserSettings, UserSettingsController
-from tray import Tray
+from tray.tray import Tray
 
 
 class AppStartManager:
