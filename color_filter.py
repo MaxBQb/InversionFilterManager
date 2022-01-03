@@ -2,7 +2,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from time import sleep
 import inject
-from keyboard import press_and_release as hotkey
+from keyboard import press_and_release as hotkey, call_later
 from winregal import RegKey
 from os import system
 from commented_config import CommentsHolder
@@ -55,9 +55,7 @@ def set_active(value):
 
 
 def toggle():
-    hotkey("ctrl+win", do_release=False)
-    hotkey(46)
-    hotkey("ctrl+win", do_press=False)
+    hotkey(('ctrl', 'win', 46))
 
 
 @inject.autoparams()

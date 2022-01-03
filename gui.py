@@ -711,8 +711,9 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
         winfo = self.name_to_winfo_map[values[event][0]]
         self.selected_window = winfo
         for field, value in utils.public_fields(winfo):
-            input_id = self.property_to_id_map[field]
-            window[input_id].update(str(value))
+            input_id = self.property_to_id_map.get(field)
+            if input_id is not None:
+                window[input_id].update(str(value))
 
     def init_window(self, **kwargs):
         super().init_window(
