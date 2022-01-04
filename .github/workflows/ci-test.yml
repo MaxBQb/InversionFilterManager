@@ -23,7 +23,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install py2exe==0.10.4.1
+        pip install py2exe
 
     - name: Setup PyWin32
       run: python "$env:pythonLocation/Scripts/pywin32_postinstall.py" -install
