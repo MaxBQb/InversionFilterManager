@@ -48,7 +48,7 @@ class Tray:
             Image.open(app_abs_path(app.__icon__)),
             menu=self.build_menu()
         )
-        self.tray.run()
+        self.tray.run_detached()
 
     async def run_async(self):
         with closing(self):
