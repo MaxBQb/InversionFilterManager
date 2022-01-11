@@ -1,7 +1,7 @@
-jsons==1.6.0
+jsons==1.6.1
 keyboard==0.13.5
 pretty-downloader==0.1.0
-PySimpleGUI==4.55.1
+PySimpleGUI==4.56.0
 pystray==0.19.2
 Pillow==9.0.0
 pywin32==303

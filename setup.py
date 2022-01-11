@@ -5,11 +5,6 @@ import py2exe
 import _meta as app
 
 
-# py2exe says 'site' package unavailable for windows => useless
-# but somewhat I've got import error without next line
-py2exe.hooks.windows_excludes.remove("site")
-
-
 def dirty_pystray_fix():
     from pystray import __path__ as tray_path, __package__ as tray_package
     tray_path = os.path.join(tray_path[0], "__init__.py")
