@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Callable, TypeVar, TextIO
 from active_window_checker import WinTrackerSettings
 from auto_update import AutoUpdateSettings
-from color_filter import ColorFilterSettings
 from commented_config import CommentsHolder, CommentsWriter, get_comments_holder
 from file_tracker import DataFileSyncer, Syncable
 
@@ -13,9 +12,6 @@ class UserSettings:
     _comments_ = CommentsHolder()
 
     win_tracker: WinTrackerSettings = WinTrackerSettings()
-    _comments_.add(None, locals(), True)
-
-    color_filter: ColorFilterSettings = ColorFilterSettings()
     _comments_.add(None, locals(), True)
 
     auto_update: AutoUpdateSettings = AutoUpdateSettings()

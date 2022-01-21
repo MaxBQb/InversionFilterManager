@@ -20,7 +20,7 @@ import inject
 import win32con
 import win32gui
 import win32process
-import color_filter
+from color_filter import ColorFilter
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
 from inversion_rules import InversionRulesController
@@ -224,6 +224,7 @@ class WinTrackerSettings:
 class FilterStateController:
     config = inject.attr(WinTrackerSettings)
     rules = inject.attr(InversionRulesController)
+    color_filter = inject.attr(ColorFilter)
 
     def __init__(self):
         from collections import deque
@@ -232,7 +233,7 @@ class FilterStateController:
 
     def setup(self):
         self.rules.on_rules_changed = self.update_filter_state
-        color_filter.setup_color_filer_settings()
+        self.color_filter.setup()
 
     async def run(self):
         await to_thread(
@@ -268,4 +269,4 @@ class FilterStateController:
         mode = self.config.mode
 
         if mode == AppMode.RULES:
-            color_filter.set_active(self.rules.is_inversion_required(winfo))
+            self.color_filter.is_active = self.rules.is_inversion_required(winfo)
