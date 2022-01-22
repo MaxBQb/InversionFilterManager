@@ -21,12 +21,14 @@ magnification_api.MagSetFullscreenColorEffect.argtypes = (MAGCOLOREFFECT,)
 class ColorFilter:
     close_manager = inject.attr(AppCloseManager)
 
+    inversion_percentage = 0.88
+
     _MATRIX_INVERSION = (PMAGCOLOREFFECT)(
-        -1, 0, 0, 0, 0,
-        0, -1, 0, 0, 0,
-        0, 0, -1, 0, 0,
+        -inversion_percentage, 0, 0, 0, 0,
+        0, -inversion_percentage, 0, 0, 0,
+        0, 0, -inversion_percentage, 0, 0,
         0, 0, 0, 1, 0,
-        1, 1, 1, 0, 1
+        1, 1, 1, 0, 1,
     )
 
     _MATRIX_NONE = (PMAGCOLOREFFECT)(
@@ -34,7 +36,7 @@ class ColorFilter:
         0, 1, 0, 0, 0,
         0, 0, 1, 0, 0,
         0, 0, 0, 1, 0,
-        0, 0, 0, 0, 1
+        0, 0, 0, 0, 1,
     )
 
     def __init__(self):
@@ -49,7 +51,6 @@ class ColorFilter:
         if not isinstance(value, bool)\
            or self._is_active == value:
             return
-        self._is_active = value
         self._set_filter_state(value)
 
     @execute_in_main_thread()
@@ -59,7 +60,8 @@ class ColorFilter:
             if value else
             self._MATRIX_NONE
         )
-        magnification_api.MagSetFullscreenColorEffect(matrix)
+        if magnification_api.MagSetFullscreenColorEffect(matrix):
+            self._is_active = value
 
     def setup(self):
         magnification_api.MagInitialize()
