@@ -1,6 +1,11 @@
 # Changelog
-## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-01-07)
-Nothing yet.
+## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-07-27)
+Features:
+- Use independent color filter
+  - Ability to apply two color filters (one by app, another by windows itself)
+
+Fix:
+- Click on window preview canceled by inversion toggle
 
 ## [Release v0.5.4](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.5.4) (2022-01-03)
 Features:

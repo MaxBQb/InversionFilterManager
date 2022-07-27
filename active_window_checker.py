@@ -259,7 +259,9 @@ class FilterStateController:
         winfo = self.last_active_window = result
         self.last_active_windows.append(winfo)
         if self.config.show_events:
-            print(winfo.path, eventTypes.get(event, hex(event)))
+            print(winfo.path,
+                  eventTypes.get(event, hex(event)),
+                  hwnd)
         self.update_filter_state()
 
     def update_filter_state(self, winfo: WindowInfo = None):
