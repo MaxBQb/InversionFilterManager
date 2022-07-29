@@ -25,6 +25,11 @@ INPUT_DEFAULTS = dict(
     font=('Consolas', 12)
 )
 
+DROPDOWN_DEFAULTS = dict(
+    button_background_color="#313131",
+    font=('Consolas', 12)
+)
+
 INPUT_EXTRA_DEFAULTS = dict(
     insertwidth='4',
     insertbackground='silver',

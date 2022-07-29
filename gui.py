@@ -3,9 +3,12 @@ from os.path import dirname
 import PySimpleGUI as sg
 import inject
 from natsort import os_sorted
+
+import gui_utils
 import gui_utils as guitils
 import utils
 from active_window_checker import WindowInfo
+from color_filter import ColorFilter
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
 from inversion_rules import InversionRule, InversionRulesController, LookForTitle, RuleType
 
@@ -13,6 +16,7 @@ from inversion_rules import InversionRule, InversionRulesController, LookForTitl
 class RuleCreationWindow(guitils.BaseInteractiveWindow):
     title = guitils.get_title("create rule")
     rules_controller = inject.attr(InversionRulesController)
+    color_filter = inject.attr(ColorFilter)
 
     class TextState(utils.StrHolder):
         PLAIN: str
@@ -30,11 +34,16 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         LABEL_TITLE: str
         LABEL_PATH: str
         LABEL_PID: str
+        LABEL_OPACITY: str
+        LABEL_COLOR_FILTER_TYPE: str
+        FRAME_COLOR_FILTER: str
         INPUT_TITLE: str
         INPUT_PATH: str
         INPUT_PID: str
+        INPUT_OPACITY: str
         INPUT_PATH_BROWSED: str
         INPUT_NAME: str
+        INPUT_COLOR_FILTER_TYPE: str
 
     path_button_options = {
         TextState.PLAIN: dict(
@@ -71,9 +80,12 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         self.name: str = None
         self.rule: InversionRule = None
         self.path_ref = [self.winfo.path]
+        self._first_color_filter_change = True
 
     def run(self) -> tuple[InversionRule, str]:
+        self.color_filter.test_mode = True
         super().run()
+        self.color_filter.test_mode = False
         return self.rule, self.name
 
     def init_window(self, **kwargs):
@@ -142,8 +154,9 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
         )
         label_options = dict(
             auto_size_text=False,
-            size=(5, 1)
+            size=(7, 1)
         )
+        filters = list(self.color_filter.filters_holder.filters.keys())
         self.layout = [
             [guitils.center(sg.Text(
                 "Here you can choose app, "
@@ -232,7 +245,48 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
                     **guitils.INPUT_DEFAULTS
                 ),
                 self.remember_processes.button,
-            ]
+            ],
+            [
+                sg.pin(sg.Column(
+                    key=self.ID.FRAME_COLOR_FILTER,
+                    pad=(0, 0),
+                    layout=[
+                        [
+                            sg.Text(
+                                "Opacity",
+                                key=self.ID.LABEL_OPACITY,
+                                **label_options,
+                            ),
+                            sg.Slider(
+                                range=(0.0, 1.0),
+                                resolution=0.01,
+                                orientation='h',
+                                tick_interval=0.1,
+                                default_value=1.0,
+                                enable_events=True,
+                                size=(56, 15),
+                                tooltip="Power of effect applied",
+                                key=self.ID.INPUT_OPACITY,
+                            ),
+                        ],
+                        [
+                            sg.Text(
+                                "Filter",
+                                key=self.ID.LABEL_COLOR_FILTER_TYPE,
+                                **label_options,
+                            ),
+                            sg.DropDown(
+                                values=filters,
+                                default_value=filters[0],
+                                enable_events=True,
+                                tooltip="Color filter type: effect to apply",
+                                key=self.ID.INPUT_COLOR_FILTER_TYPE,
+                                **guitils.DROPDOWN_DEFAULTS
+                            ),
+                        ],
+                    ]
+                ))
+            ],
         ]
 
     def dynamic_build(self):
@@ -240,7 +294,7 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.ID.INPUT_TITLE,
             self.ID.INPUT_PATH,
             self.ID.INPUT_PID,
-            self.ID.INPUT_NAME
+            self.ID.INPUT_NAME,
         ]
         super().dynamic_build()
 
@@ -301,6 +355,18 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             self.ID.INPUT_PATH_BROWSED,
             self.on_browse_path
         )
+        self.add_event_handlers(
+            self.ID.INPUT_OPACITY,
+            self.on_opacity_change
+        )
+        self.add_event_handlers(
+            self.ID.INPUT_COLOR_FILTER_TYPE,
+            self.on_filter_type_change
+        )
+        self.add_event_handlers(
+            self.rule_type.key,
+            self.on_type_changed
+        )
 
     def disable_title(self, event: str, window: sg.Window, values):
         window[self.ID.INPUT_TITLE].update(
@@ -326,6 +392,19 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             False
         )
 
+    def on_opacity_change(self, event: str, window: sg.Window, values):
+        if self._first_color_filter_change:
+            self._first_color_filter_change = False
+            self.on_filter_type_change(event, window, values)
+        self.color_filter.update_opacity(values[self.ID.INPUT_OPACITY])
+
+    def on_filter_type_change(self, event: str, window: sg.Window, values):
+        self.color_filter.set_filter(
+            values[self.ID.INPUT_COLOR_FILTER_TYPE],
+            values[self.ID.INPUT_OPACITY],
+            True
+        )
+
     def on_submit(self, event: str, window: sg.Window, values):
         self.name = values[self.ID.INPUT_NAME]
 
@@ -346,9 +425,16 @@ class RuleCreationWindow(guitils.BaseInteractiveWindow):
             *get_keys(self.title_button, self.ID.INPUT_TITLE),
             self.look_for_title_button.selected,
             self.rule_type.selected,
-            self.remember_processes.selected
+            self.remember_processes.selected,
+            values[self.ID.INPUT_COLOR_FILTER_TYPE],
+            values[self.ID.INPUT_OPACITY],
         )
         self.close()
+
+    def on_type_changed(self, event: str, window: sg.Window, values):
+        window[self.ID.FRAME_COLOR_FILTER].update(
+            visible=self.rule_type.selected == RuleType.INCLUDE
+        )
 
     def get_toggle_escape_handler(self,
                                   switcher: MultiStateButton,

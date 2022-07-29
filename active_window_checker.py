@@ -271,4 +271,8 @@ class FilterStateController:
         mode = self.config.mode
 
         if mode == AppMode.RULES:
-            self.color_filter.is_active = self.rules.is_inversion_required(winfo)
+            color_filter = self.rules.get_filter(winfo)
+            if color_filter is not None:
+                self.color_filter.set_filter(
+                    *color_filter
+                )

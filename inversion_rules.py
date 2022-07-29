@@ -1,3 +1,4 @@
+import typing
 from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
@@ -78,9 +79,30 @@ class InversionRule:
         pid of target app will always activate rule,
     """, "false"), locals())
 
+    color_filter: str = None
+    _comments_.add(__comment_base.format("""
+        Filter name (id from filters list file)
+    """, "inversion"), locals())
+
+    color_filter_opacity: float = None
+    _comments_.add(__comment_base.format("""
+        How transparent looks filter applied:
+        \t0.0 - No color filter applied
+        \t1.0 - Color filter applied with full power
+        \t0.0 < x < 1.0 - Color filter applied blended with current color
+        Values around 0.5 are not recommended
+    """, "1.0"), locals())
+
     def __post_init__(self):
+        if self.color_filter == 'inversion':
+            self.color_filter = None
+        if self.color_filter_opacity == 1.0:
+            self.color_filter_opacity = None
+
         if self.remember_processes:
             self._pids = set()
+        else:
+            self.remember_processes = None
 
         self._type = self.type or RuleType.INCLUDE
         if self.type == RuleType.INCLUDE:
@@ -186,16 +208,27 @@ class InversionRulesController(Syncable):
         self._syncer.save_file()
         self.on_rules_changed()
 
-    def is_inversion_required(self, info: 'WindowInfo') -> Optional[bool]:
+    def get_filter(self, info: 'WindowInfo') -> typing.Optional[tuple[str, float]]:
         possibilities = (
             (self.ignored, None),
             (self.excluded, False),
             (self.included, True),
         )
         for rules, result in possibilities:
-            if self.has_active_rules(info, rules):
-                return result
-        return False
+            rule_name = next(self.get_active_rules(info, rules), None)
+            if rule_name is None:
+                continue
+            rule: InversionRule = rules[rule_name]
+            if result:
+                color_filter = rule.color_filter
+                opacity = rule.color_filter_opacity
+                if color_filter is None:
+                    color_filter = 'inversion'
+                if opacity is None:
+                    opacity = 1.0
+                return color_filter, opacity
+            return 'no effect', 1.0
+        return 'no effect', 1.0
 
     def has_active_rules(self, info: 'WindowInfo', rules: RULES = None):
         if rules is None:

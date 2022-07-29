@@ -5,6 +5,7 @@ from active_window_checker import FilterStateController
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
 from _meta import IndirectDependency, APP_DIR
+from color_filter import ColorFiltersListController
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import MainExecutor
@@ -18,6 +19,7 @@ class AppStartManager:
     interaction_manager = inject.attr(InteractionManager)
     settings_controller = inject.attr(UserSettingsController)
     inversion_rules = inject.attr(InversionRulesController)
+    color_filters_holder = inject.attr(ColorFiltersListController)
     main_executor = inject.attr(MainExecutor)
     close_manager = inject.attr(AppCloseManager)
     tray = inject.attr(Tray)
@@ -26,6 +28,7 @@ class AppStartManager:
         os.chdir(APP_DIR)
         self.settings_controller.setup()
         self.inversion_rules.setup()
+        self.color_filters_holder.setup()
         self.state_controller.setup()
         self.close_manager.setup()
         self.interaction_manager.setup()

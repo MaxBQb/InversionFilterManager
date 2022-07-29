@@ -263,3 +263,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/windows,pycharm+all,python
 /settings.yaml
 /inversion_rules.yaml
+/color_filters.yaml

@@ -12,6 +12,7 @@ import _meta as app
 from active_window_checker import AppMode
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
+from color_filter import ColorFiltersListController
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from settings import UserSettingsController, OPTION_PATH, OPTION_CHANGE_HANDLER, T
@@ -23,6 +24,7 @@ from utils import explore, app_abs_path, show_exceptions
 class Tray:
     settings_controller = inject.attr(UserSettingsController)
     inversion_rules = inject.attr(InversionRulesController)
+    color_filters_holder = inject.attr(ColorFiltersListController)
     im = inject.attr(InteractionManager)
     updater = inject.attr(AutoUpdater)
     close_manager = inject.attr(AppCloseManager)
@@ -102,7 +104,11 @@ class Tray:
                     MenuItem(ref('Inversion rules file'),
                              _open(app_abs_path(
                                  self.inversion_rules.filename
-                             )))
+                             ))),
+                    MenuItem(ref('Color filters file'),
+                             _open(app_abs_path(
+                                 self.color_filters_holder.filename
+                             ))),
                 )
             ),
             MenuItem(
@@ -112,6 +118,8 @@ class Tray:
                              callback(self.settings_controller.load)),
                     MenuItem(ref('Inversion rules file'),
                              callback(self.inversion_rules.load)),
+                    MenuItem(ref('Color filters file'),
+                             callback(self.color_filters_holder.load)),
                 )
             ),
             Menu.SEPARATOR,
