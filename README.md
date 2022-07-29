@@ -1,4 +1,10 @@
 # InversionFilterManager [![Latest](https://img.shields.io/github/v/tag/MaxBQb/InversionFilterManager?sort=date&label=&style=for-the-badge&color=424242)](https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip)
+![Windows](https://svgshare.com/i/ZhY.svg)
+[![GitHub license](https://img.shields.io/github/license/MaxBQb/InversionFilterManager.svg)](https://github.com/MaxBQb/InversionFilterManager/blob/master/LICENSE.md)
+
+> **Admin privileges desirable**:
+> Some programs won't been properly handled and might be ignored 
+> in case of admin rights not received (other things should work properly even without admin privileges) 
 
 ## Download
 
