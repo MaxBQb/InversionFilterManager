@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Callable, TypeVar, TextIO
+
 from active_window_checker import WinTrackerSettings
 from auto_update import AutoUpdateSettings
 from commented_config import CommentsHolder, CommentsWriter, get_comments_holder

@@ -1,9 +1,11 @@
 import asyncio
 import time
 from typing import Callable
+
 import inject
 import win32api
 from win32con import WM_QUIT
+
 from main_thread_loop import execute_in_main_thread, MainExecutor
 
 

@@ -2,16 +2,17 @@ import os
 import shutil
 import sys
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from queue import Queue
-import inject
-from app_close import AppCloseManager
-from commented_config import CommentsHolder
-from _meta import IndirectDependency, __developer_mode__, APP_DIR
-from interaction import InteractionManager
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
+import inject
+
+from _meta import IndirectDependency, __developer_mode__, APP_DIR
+from app_close import AppCloseManager
+from commented_config import CommentsHolder
+from interaction import InteractionManager
 
 if TYPE_CHECKING:
     from settings import UserSettingsController, UserSettings

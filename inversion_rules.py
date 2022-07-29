@@ -2,7 +2,8 @@ import typing
 from dataclasses import dataclass
 from enum import Enum, auto
 from re import compile
-from typing import TYPE_CHECKING, TextIO, Optional
+from typing import TYPE_CHECKING, TextIO
+
 from commented_config import CommentsHolder, get_comments_holder
 from file_tracker import DataFileSyncer, Syncable
 

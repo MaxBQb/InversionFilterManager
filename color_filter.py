@@ -1,13 +1,12 @@
-import itertools
-import typing
 from collections import OrderedDict
 from typing import TextIO
 
 import inject
+import win_magnification as mag  # type: ignore
+
 from app_close import AppCloseManager
 from file_tracker import Syncable, DataFileSyncer
 from main_thread_loop import execute_in_main_thread
-import win_magnification as mag  # type: ignore
 
 COLOR_FILTERS = dict[str, mag.types.ColorMatrix]
 

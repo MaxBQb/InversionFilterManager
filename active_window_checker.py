@@ -16,12 +16,14 @@ from asyncio import to_thread
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
+
 import inject
 import win32con
 import win32gui
 import win32process
-from color_filter import ColorFilter
+
 from app_close import AppCloseManager
+from color_filter import ColorFilter
 from commented_config import CommentsHolder
 from inversion_rules import InversionRulesController
 from utils import show_exceptions

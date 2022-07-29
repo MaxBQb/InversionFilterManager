@@ -1,10 +1,12 @@
 import asyncio
 import os
+
 import inject
+
+from _meta import IndirectDependency, APP_DIR
 from active_window_checker import FilterStateController
 from app_close import AppCloseManager
 from auto_update import AutoUpdater
-from _meta import IndirectDependency, APP_DIR
 from color_filter import ColorFiltersListController
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController

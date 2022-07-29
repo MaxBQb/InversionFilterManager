@@ -1,7 +1,9 @@
 from contextlib import contextmanager
 from queue import Queue
+
 import inject
 import keyboard
+
 import gui
 import gui_utils
 from active_window_checker import FilterStateController, WindowInfo

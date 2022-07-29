@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import Type, Hashable
+from typing import Hashable
 
 from pystray import Menu, MenuItem
 

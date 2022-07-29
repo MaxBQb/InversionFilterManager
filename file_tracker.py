@@ -1,14 +1,16 @@
 import os
+from abc import ABC
 from contextlib import contextmanager, suppress
 from time import time
 from typing import Generic, TypeVar, TextIO
+
 import inject
 import jsons
 import yaml
-from abc import ABC
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer as DirectoryObserver
 from watchdog.observers.api import DEFAULT_OBSERVER_TIMEOUT
+
 from _meta import IndirectDependency, APP_DIR
 from utils import app_abs_path
 

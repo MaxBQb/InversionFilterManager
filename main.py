@@ -1,10 +1,12 @@
 from asyncio import run
+
 import inject
-from uac import try_request_admin_rights
-from app_start import AppStartManager
-import win32event
 import win32api
+import win32event
 from winerror import ERROR_ALREADY_EXISTS
+
+from app_start import AppStartManager
+from uac import try_request_admin_rights
 
 
 def lock_instance():

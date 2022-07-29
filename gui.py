@@ -1,10 +1,10 @@
 from enum import Enum
 from os.path import dirname
+
 import PySimpleGUI as sg
 import inject
 from natsort import os_sorted
 
-import gui_utils
 import gui_utils as guitils
 import utils
 from active_window_checker import WindowInfo
