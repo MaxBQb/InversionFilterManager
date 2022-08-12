@@ -1,6 +1,7 @@
 # Changelog
 ## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-07-29)
-Nothing yet.
+Stability:
+- Drop support of non-privileged run (Requires run as Administrator)
 
 ## [Release v0.6.0](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.6.0) (2022-07-29)
 Features:

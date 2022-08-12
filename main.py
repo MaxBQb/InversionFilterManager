@@ -6,7 +6,6 @@ import win32event
 from winerror import ERROR_ALREADY_EXISTS
 
 from app_start import AppStartManager
-from uac import try_request_admin_rights
 
 
 def lock_instance():
@@ -24,11 +23,6 @@ async def main(app: AppStartManager):
 
 
 def bootstrap():
-    result = try_request_admin_rights()
-    if result:
-        return
-    if result is None:
-        print("WARNING: Without administrator rights some features may not work properly!")
     lock = lock_instance()
     if not lock:
         print("WARNING: Program already started!")

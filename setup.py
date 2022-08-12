@@ -2,13 +2,17 @@ from distutils.core import setup
 from glob import glob
 
 # noinspection PyUnresolvedReferences,PyPackageRequirements
-import py2exe
+import py2exe  # type: ignore
 
 import _meta as app
+
+with open('manifest.xml') as f:
+    manifest = f.read()
 
 setup(console=[dict(
         script='main.py',
         icon_resources=[(0, app.__icon__)],
+        other_resources=[(24, 1, manifest)],
       )],
       name=app.__product_name__,
       version=app.__version__,

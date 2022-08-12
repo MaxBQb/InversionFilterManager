@@ -1,3 +1,4 @@
+import ctypes
 from asyncio import to_thread
 from contextlib import closing
 
@@ -17,7 +18,6 @@ from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from settings import UserSettingsController, OPTION_PATH, OPTION_CHANGE_HANDLER, T
 from tray.utils import ref, make_toggle, make_radiobutton
-from uac import has_admin_rights
 from utils import explore, app_abs_path, show_exceptions
 
 
@@ -80,7 +80,7 @@ class Tray:
         return Menu(
             MenuItem(
                 f'{app.__product_name__} v{app.__version__}'
-                + (" (Admin)" if has_admin_rights() else ""),
+                + (" (Admin)" if ctypes.windll.shell32.IsUserAnAdmin() else ""),
                 None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(
