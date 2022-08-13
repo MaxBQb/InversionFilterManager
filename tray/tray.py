@@ -1,13 +1,9 @@
-import ctypes
 from asyncio import to_thread
 from contextlib import closing
 
 import inject
-import win32console
-import win32gui
 from PIL import Image
 from pystray import Menu, MenuItem, Icon
-from win32con import SW_HIDE, SW_SHOW
 
 import _meta as app
 from active_window_checker import AppMode
@@ -17,6 +13,7 @@ from color_filter import ColorFiltersListController
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from settings import UserSettingsController, OPTION_PATH, OPTION_CHANGE_HANDLER, T
+from tray.features import is_admin, Console
 from tray.utils import ref, make_toggle, make_radiobutton
 from utils import explore, app_abs_path, show_exceptions
 
@@ -28,20 +25,15 @@ class Tray:
     im = inject.attr(InteractionManager)
     updater = inject.attr(AutoUpdater)
     close_manager = inject.attr(AppCloseManager)
+    console = inject.attr(Console)
 
     def __init__(self):
         self.tray = None
-        self.console_hwnd: int = None
-        self.console_shown = False
 
     def setup(self):
         self.close_manager.add_exit_handler(self.close)
-        self.console_hwnd = win32console.GetConsoleWindow()
-        self.close_manager.add_exit_handler(lambda: win32gui.ShowWindow(
-            self.console_hwnd,
-            SW_SHOW
-        ))
-        win32gui.ShowWindow(self.console_hwnd, SW_HIDE)
+        self.close_manager.add_exit_handler(self.console.show)
+        self.console.hide()
 
     @show_exceptions()
     def run(self):
@@ -80,7 +72,7 @@ class Tray:
         return Menu(
             MenuItem(
                 f'{app.__product_name__} v{app.__version__}'
-                + (" (Admin)" if ctypes.windll.shell32.IsUserAnAdmin() else ""),
+                + (" (Admin)" if is_admin() else ""),
                 None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(
@@ -149,10 +141,7 @@ class Tray:
 
     @make_toggle
     def toggle_console(self, value):
-        win32gui.ShowWindow(
-            self.console_hwnd,
-            SW_SHOW if value else SW_HIDE
-        )
+        self.console.visible = value
 
     @make_radiobutton({
         AppMode.DISABLE: ref("Ignore All"),
