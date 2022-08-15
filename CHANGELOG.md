@@ -1,5 +1,8 @@
 # Changelog
 ## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-07-29)
+Features:
+- Single-app-instance check can be disabled with `--allow-multiple`/`-m` start param  
+
 Stability:
 - Drop support of non-privileged run (Requires run as Administrator)
 
