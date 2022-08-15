@@ -39,7 +39,12 @@ jobs:
       with:
         files: dist/
         dest: release.zip
-        
+    - name: Get release notes
+      uses: yashanand1910/standard-release-notes@v1.2.1
+      id: release_notes
+      with:
+        changelog_path: ./CHANGELOG.md
+        version: Release v${{ steps.verinfo.outputs.version }}
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -48,6 +53,7 @@ jobs:
       with:
         tag_name: v${{ steps.verinfo.outputs.version }}
         release_name: Release v${{ steps.verinfo.outputs.version }}
+        body: ${{ steps.release_notes.outputs.release_notes }}
       
     - name: Upload Release Asset
       id: upload-release-asset 
