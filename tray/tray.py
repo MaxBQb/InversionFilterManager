@@ -13,7 +13,7 @@ from color_filter import ColorFiltersListController
 from interaction import InteractionManager
 from inversion_rules import InversionRulesController
 from settings import UserSettingsController, OPTION_PATH, OPTION_CHANGE_HANDLER, T
-from tray.features import is_admin, Console
+from tray.features import has_admin_rights, Console, SystemStartupHandler, start_with_admin_rights
 from tray.utils import ref, make_toggle, make_radiobutton
 from utils import explore, app_abs_path, show_exceptions
 
@@ -26,6 +26,7 @@ class Tray:
     updater = inject.attr(AutoUpdater)
     close_manager = inject.attr(AppCloseManager)
     console = inject.attr(Console)
+    startup_handler = inject.attr(SystemStartupHandler)
 
     def __init__(self):
         self.tray = None
@@ -67,17 +68,26 @@ class Tray:
             lambda settings: settings.win_tracker.mode,
             change_mode_setter
         )
+        is_admin = has_admin_rights()
 
         im = self.im
         return Menu(
             MenuItem(
                 f'{app.__product_name__} v{app.__version__}'
-                + (" (Admin)" if is_admin() else ""),
+                + (" (Admin)" if is_admin else ""),
                 None, enabled=False),
+            MenuItem("Re-Run as admin", self.restart_with_admin_rights,
+                     visible=(not is_admin)),
             Menu.SEPARATOR,
             MenuItem(
                 ref("Show console"),
-                *self.toggle_console()
+                *make_toggle(self.toggle_console)
+            ),
+            MenuItem(
+                "Run a"+ref("t")+" system startup",
+                *make_toggle(self.toggle_run_at_startup,
+                             self.startup_handler.is_subscribed),
+                enabled=is_admin
             ),
             MenuItem(
                 ref("Mode"),
@@ -139,9 +149,11 @@ class Tray:
             path, new_handler, True
         )
 
-    @make_toggle
     def toggle_console(self, value):
         self.console.visible = value
+
+    def toggle_run_at_startup(self, value):
+        self.startup_handler.is_subscribed = value
 
     @make_radiobutton({
         AppMode.DISABLE: ref("Ignore All"),
@@ -150,3 +162,7 @@ class Tray:
     def change_mode(self, value: AppMode):
         self.settings_controller.settings.win_tracker.mode = value
         self.settings_controller.save()
+
+    def restart_with_admin_rights(self):
+        if start_with_admin_rights(self.console.visible):
+            self.close_manager.close()

@@ -1,10 +1,9 @@
 # Changelog
 ## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-07-29)
 Features:
+- Option to request administrative privileges
+- Option to run app at system startup  
 - Single-app-instance check can be disabled with `--allow-multiple`/`-m` start param  
-
-Stability:
-- Drop support of non-privileged run (Requires run as Administrator)
 
 ## [Release v0.6.0](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.6.0) (2022-07-29)
 Features:

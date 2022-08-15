@@ -1,11 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-    <asmv3:trustInfo xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
-        <asmv3:security>
-            <asmv3:requestedPrivileges>
-                <asmv3:requestedExecutionLevel
-                    level="requireAdministrator"
+    <assemblyIdentity version="1.0.0.0"
+     processorArchitecture="X86"
+     name="InversionManager"
+     type="win32"/>
+    <description>Inverts colors when you opens blinding white windows</description>
+    <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+        <security>
+            <requestedPrivileges>
+                <requestedExecutionLevel
+                    level="highestAvailable"
                     uiAccess="false" />
-            </asmv3:requestedPrivileges>
-        </asmv3:security>
-    </asmv3:trustInfo>
+            </requestedPrivileges>
+        </security>
+    </trustInfo>
 </assembly>

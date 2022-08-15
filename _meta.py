@@ -1,4 +1,5 @@
 import sys
+import os
 from enum import Enum, auto
 
 
@@ -16,10 +17,5 @@ class IndirectDependency(Enum):
     CARRYON_BEFORE_UPDATE = auto()
 
 
-def get_app_dir():
-    import os
-    return os.path.dirname(os.path.abspath(sys.argv[0]))
-
-
-APP_DIR = get_app_dir()
-del get_app_dir
+APP_PATH = os.path.abspath(sys.argv[0])
+APP_DIR = os.path.dirname(APP_PATH)

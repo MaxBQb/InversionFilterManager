@@ -18,7 +18,7 @@ setup(console=[dict(
       version=app.__version__,
       author=app.__author__,
       description="Inverts colors when you opens blinding white windows",
-      data_files=[('.', ["update.bat"]),
+      data_files=[('.', ["update.bat", "StartupTaskTemplate.xml"]),
                   ('./img', glob('img/*'))],
       options=dict(
           py2exe=dict(

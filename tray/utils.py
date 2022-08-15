@@ -13,28 +13,21 @@ def ref(text: str):
     return f'&{text[0]}\u0332{text[1:]}'
 
 
-def make_toggle(out_func=None, default_value=False):
-    def decorator(func):
-        def wrapper(self):
-            value = [default_value]
+def make_toggle(setter=None, default_value=False):
+    value = [default_value]
 
-            def get_value(item):
-                return value[0]
+    def get_value(item):
+        return value[0]
 
-            def toggle():
-                value[0] ^= True
-                func(self, value[0])
+    def toggle():
+        value[0] ^= True
+        setter(value[0])
 
-            return toggle, get_value
-        return wrapper
-    if out_func:
-        return decorator(out_func)
-    return decorator
+    return toggle, get_value
 
 
 def make_radiobutton(values: dict[Hashable, str],
-                     default_value=None,
-                     ):
+                     default_value=None):
     def decorator(func):
         def wrapper(*args, **kwargs):
             value_ref = [default_value or next(iter(values))]
