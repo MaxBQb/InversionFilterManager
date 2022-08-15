@@ -181,21 +181,25 @@ def titles(iterable):
 @inject.autoparams()
 def listen_switch_events(callback, close_manager: AppCloseManager):
     ole32.CoInitialize(0)
+    try:
+        WinEventProc = WinEventProcType(callback)
+        user32.SetWinEventHook.restype = ctypes.wintypes.HANDLE
 
-    WinEventProc = WinEventProcType(callback)
-    user32.SetWinEventHook.restype = ctypes.wintypes.HANDLE
+        hookIDs = [setHook(WinEventProc, et) for et in eventTypes.keys()]
+        if not any(hookIDs):
+            print('SetWinEventHook failed')
+            sys.exit(1)
 
-    hookIDs = [setHook(WinEventProc, et) for et in eventTypes.keys()]
-    if not any(hookIDs):
-        print('SetWinEventHook failed')
-        sys.exit(1)
+        close_manager.append_blocked_thread()
+        win32gui.PumpMessages()
 
-    close_manager.append_blocked_thread()
-    win32gui.PumpMessages()
-
-    for hookID in hookIDs:
-        user32.UnhookWinEvent(hookID)
-    ole32.CoUninitialize()
+        for hookID in hookIDs:
+            try:
+                user32.UnhookWinEvent(hookID)
+            except:
+                pass
+    finally:
+        ole32.CoUninitialize()
 
 
 class AppMode(Enum):
