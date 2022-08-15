@@ -1,5 +1,6 @@
 # Changelog
-## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-07-29)
+## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-08-16)
+## [Release v0.7.0](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.7.0) (2022-08-16)
 Features:
 - Option to request administrative privileges
 - Option to run app at system startup  

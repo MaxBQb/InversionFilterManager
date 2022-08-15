@@ -3,7 +3,7 @@ import os
 from enum import Enum, auto
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 __product_name__ = "InversionFilterManager"
 __author__ = "MaxBQb"
 __icon__ = "img/inversion_manager.ico"
