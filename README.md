@@ -43,5 +43,6 @@ start /WAIT bitsadmin /transfer "Download Inversion Manager" /download /priority
   - Ignore used to don't change current filter used in response on this program captured 
 - All functionality available in system tray menu
 - App can automatically download and install updates (check settings to prevent or configure this)
+- App can run itself at system startup
 - App makes backup for older version on updates (overrides previous backup)
 - Rules checks can be disabled
