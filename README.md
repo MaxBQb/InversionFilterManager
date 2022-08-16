@@ -18,7 +18,7 @@ start /WAIT bitsadmin /transfer "Download Inversion Manager" /download /priority
 
 ### Manual
 
-1. Download the latest [![Latest](https://img.shields.io/github/v/tag/MaxBQb/InversionFilterManager?sort=date&label=&style=flat-square&color=424242)](https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip) release [**here**]((https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip))
+1. Download the latest [![Latest](https://img.shields.io/github/v/tag/MaxBQb/InversionFilterManager?sort=date&label=&style=flat-square&color=424242)](https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip) release [**here**](https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip)
 2. Unpack downloaded file
 3. Move inner folder in place of your choice (path must not contain non-ASCII symbols) 
 4. Run `main.exe`
