@@ -163,3 +163,9 @@ def show_exceptions():
             print("in Tread:", threading.current_thread().name)
             print_exc()
         raise
+
+
+def set_between(lower_bound, upper_bound, value):
+    if lower_bound > upper_bound:
+        lower_bound, upper_bound = upper_bound, lower_bound
+    return max(lower_bound, min(upper_bound, value))

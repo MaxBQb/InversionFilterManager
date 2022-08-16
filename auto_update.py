@@ -13,26 +13,10 @@ from _meta import IndirectDependency, __developer_mode__, APP_DIR
 from app_close import AppCloseManager
 from commented_config import CommentsHolder
 from interaction import InteractionManager
+from models.auto_update import ReleaseArchiveInfo, VersionInfo, get_version
 
 if TYPE_CHECKING:
     from settings import UserSettingsController, UserSettings
-
-
-@dataclass
-class ReleaseArchiveInfo:
-    name: str
-    size: int
-    download_link: str
-
-
-@dataclass
-class VersionInfo:
-    version_text: str
-    release_info: ReleaseArchiveInfo = None
-
-    @property
-    def version(self):
-        return get_version(self.version_text)
 
 
 @dataclass
@@ -177,14 +161,10 @@ class AutoUpdater:
             self.update_in_progress = False
             print("Update failed:", e)
 
-    def request_update(self, version_info):
+    def request_update(self, version_info: VersionInfo):
         if not self.config.ask_before_update:
             return True
-        self.im.request_update(
-            version_info.version_text,
-            version_info.release_info.size,
-            self.response
-        )
+        self.im.request_update(version_info, self.response)
         return self.response.get()
 
     def update(self, release_info: ReleaseArchiveInfo):
@@ -246,7 +226,8 @@ def get_latest_version_info(user, repo) -> VersionInfo:
     check_link = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
     data = json.loads(requests.get(check_link).text)
     version_info = VersionInfo(
-        data.get('tag_name', "v0.0.0")[1:]
+        data.get('tag_name', "v0.0.0")[1:],
+        data.get('body', "No description."),
     )
     assets = data.get('assets', [])
     for asset in assets:
@@ -258,12 +239,6 @@ def get_latest_version_info(user, repo) -> VersionInfo:
             )
             break
     return version_info
-
-
-def get_version(version: str):
-    """ str("1.0.0") -> tuple(1, 0, 0)
-    """
-    return tuple(int(i) for i in version.split("."))
 
 
 def make_backup(origin_path, backup_path, backup_name):

@@ -1,9 +1,11 @@
+import math
 from typing import Callable, Any
 
 import PySimpleGUI as sg
 
+import gui_utils
 from _meta import __product_name__ as app_name
-from utils import StrHolder, max_len, app_abs_path
+from utils import StrHolder, max_len, app_abs_path, set_between
 
 BUTTON_DEFAULTS = dict(
     mouseover_colors="#333333",
@@ -196,6 +198,7 @@ class BaseNonBlockingWindow:
                 keep_on_top=True,
                 grab_anywhere=True,
             ) | kwargs)
+
         )
 
     def dynamic_build(self):
@@ -367,3 +370,29 @@ class ConfirmationWindow(BaseInteractiveWindow):
                   values):
         self.positive_answer = False
         self.close()
+
+
+class OutputWindow(BaseNonBlockingWindow):
+    def __init__(self, message: str, title="note"):
+        self.title = get_title(title)
+        self.message = message.strip()
+        super().__init__()
+
+    def build_layout(self):
+        lines = self.message.split('\n')
+        longest_line_length = len(max(lines, key=len))
+        width = set_between(20, 80, longest_line_length)
+        lines_count = sum(
+            math.ceil(len(line) / float(width)) for line in lines
+        )
+        height = set_between(5, 25, lines_count)
+        self.layout.append([center(
+            sg.Multiline(
+                self.message,
+                autoscroll=True,
+                disabled=True,
+                font=gui_utils.INPUT_DEFAULTS['font'],
+                size=(width, height),
+                no_scrollbar=height >= lines_count
+            )
+        )])

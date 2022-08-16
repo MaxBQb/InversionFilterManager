@@ -11,6 +11,7 @@ from active_window_checker import WindowInfo
 from color_filter import ColorFilter
 from custom_gui_elements import MultiStateButton, PageSwitchController, Switcher
 from inversion_rules import InversionRule, InversionRulesController, LookForTitle, RuleType
+from models.auto_update import VersionInfo
 
 
 class RuleCreationWindow(guitils.BaseInteractiveWindow):
@@ -654,20 +655,23 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
 
     class ID(guitils.ConfirmationWindow.ID):
         INPUT: str
+        BUTTON_RELEASE_DESCRIPTION: str
 
-    def __init__(self,
-                 latest_version: str,
-                 file_size: int):
+    def __init__(self, version: VersionInfo):
         super().__init__("Do you want to install new release?")
-        self.latest_version = latest_version
-        self.file_size = file_size
+        self.version = version
 
     def build_layout(self):
         import _meta as app
         from hurry.filesize import size, alternative
 
         self.layout = [
-            [guitils.center(sg.Text('Update info', font=("Verdana", 18)))]
+            [guitils.center(
+                sg.Text(
+                    'Update info',
+                    font=("Verdana", 18)
+                ),
+            )]
         ]
 
         if app.__developer_mode__:
@@ -686,8 +690,8 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
         description = dict(
             app_name=app.__product_name__,
             current_version=app.__version__,
-            latest_version=self.latest_version,
-            release_size=size(self.file_size, alternative),
+            latest_version=self.version.version_text,
+            release_size=size(self.version.release_info.size, alternative),
         )
         label_size = (utils.max_len(description.keys()) + 1, 1)
         input_size = (utils.max_len(description.values()) + 4, 1)
@@ -712,7 +716,26 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
              )]
             for (label, content), input_key in zip(description.items(), self._inputs)
         ]
+        self.layout += [[guitils.center(
+            sg.Button(
+                "Release description",
+                key=self.ID.BUTTON_RELEASE_DESCRIPTION,
+                **guitils.BUTTON_DEFAULTS
+            ),
+        )]]
         super().build_layout()
+
+    def set_handlers(self):
+        super().set_handlers()
+        self.add_event_handlers(
+            self.ID.BUTTON_RELEASE_DESCRIPTION,
+            self.show_release_description
+        )
+
+    def show_release_description(self, event, window, values):
+        self._open_dependent_window(guitils.OutputWindow(
+            self.version.description, f"Release {self.version.version_text} Description"
+        ))
 
 
 class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
@@ -768,7 +791,7 @@ class ChooseRuleCandidateWindow(guitils.BaseInteractiveWindow):
             )
             for winfo in self.windows_info
         )
-        max_text_len = min(40,  max(20, max_text_len+1))
+        max_text_len = utils.set_between(20, 40, max_text_len + 1)
         layout, self._inputs = guitils.layout_from_fields(
             utils.public_fields(self.selected_window),
             self.ID.DESCRIPTION,

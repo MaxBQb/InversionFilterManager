@@ -10,6 +10,7 @@ from active_window_checker import FilterStateController, WindowInfo
 from app_close import AppCloseManager
 from inversion_rules import InversionRulesController
 from main_thread_loop import execute_in_main_thread
+from models.auto_update import VersionInfo
 
 
 class InteractionManager:
@@ -119,8 +120,7 @@ class InteractionManager:
 
     @execute_in_main_thread()
     def request_update(self,
-                       latest,
-                       file_size,
+                       version: VersionInfo,
                        response: Queue):
-        with self._open_window(gui.UpdateRequestWindow(latest, file_size)) as window:
+        with self._open_window(gui.UpdateRequestWindow(version)) as window:
             response.put_nowait(window.run())
