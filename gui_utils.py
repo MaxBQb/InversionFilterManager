@@ -1,4 +1,3 @@
-import math
 from typing import Callable, Any
 
 import PySimpleGUI as sg
@@ -381,16 +380,15 @@ class OutputWindow(BaseNonBlockingWindow):
     def build_layout(self):
         lines = self.message.split('\n')
         longest_line_length = len(max(lines, key=len))
-        width = set_between(20, 80, longest_line_length)
-        lines_count = sum(
-            math.ceil(len(line) / float(width)) for line in lines
-        )
+        width = set_between(20, 100, longest_line_length)
+        lines_count = len(lines)
         height = set_between(5, 25, lines_count)
         self.layout.append([center(
             sg.Multiline(
                 self.message,
                 autoscroll=True,
                 disabled=True,
+                horizontal_scroll=width < longest_line_length,
                 font=gui_utils.INPUT_DEFAULTS['font'],
                 size=(width, height),
                 no_scrollbar=height >= lines_count

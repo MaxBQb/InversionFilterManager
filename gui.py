@@ -3,6 +3,7 @@ from os.path import dirname
 
 import PySimpleGUI as sg
 import inject
+import requests
 from natsort import os_sorted
 
 import gui_utils as guitils
@@ -656,6 +657,7 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
     class ID(guitils.ConfirmationWindow.ID):
         INPUT: str
         BUTTON_RELEASE_DESCRIPTION: str
+        BUTTON_CHANGELOG: str
 
     def __init__(self, version: VersionInfo):
         super().__init__("Do you want to install new release?")
@@ -722,6 +724,11 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
                 key=self.ID.BUTTON_RELEASE_DESCRIPTION,
                 **guitils.BUTTON_DEFAULTS
             ),
+            sg.Button(
+                "Changelog",
+                key=self.ID.BUTTON_CHANGELOG,
+                **guitils.BUTTON_DEFAULTS
+            ),
         )]]
         super().build_layout()
 
@@ -729,12 +736,23 @@ class UpdateRequestWindow(guitils.ConfirmationWindow):
         super().set_handlers()
         self.add_event_handlers(
             self.ID.BUTTON_RELEASE_DESCRIPTION,
-            self.show_release_description
+            self.show_release_description,
+        )
+        self.add_event_handlers(
+            self.ID.BUTTON_CHANGELOG,
+            self.show_changelog,
         )
 
     def show_release_description(self, event, window, values):
         self._open_dependent_window(guitils.OutputWindow(
             self.version.description, f"Release {self.version.version_text} Description"
+        ))
+
+    def show_changelog(self, event, window, values):
+        import _meta as app
+        link = "https://raw.githubusercontent.com/MaxBQb/InversionFilterManager/master/CHANGELOG.md"
+        self._open_dependent_window(guitils.OutputWindow(
+            requests.get(link).text, f"Changelog (current version {app.__version__})"
         ))
 
 
