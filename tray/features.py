@@ -5,10 +5,13 @@ import sys
 import textwrap
 
 import inject
+import ntsecuritycon
 import win32con
 import win32console
+import win32api
 import win32gui
 import win32security
+import winerror
 
 import _meta
 
@@ -92,11 +95,24 @@ class StartupTaskGenerator:
 
     @property
     def user_id(self) -> str:
-        security_descriptor = win32security.GetFileSecurity(
-            ".", win32security.OWNER_SECURITY_INFORMATION
-        )
-        sid = security_descriptor.GetSecurityDescriptorOwner()
-        return win32security.ConvertSidToStringSid(sid)
+        try:
+            token = win32security.OpenThreadToken(
+                win32api.GetCurrentThread(),
+                ntsecuritycon.TOKEN_QUERY,
+                1
+            )
+        except win32api.error as details:
+            if details.winerror != winerror.ERROR_NO_TOKEN:
+                raise
+            # attempt to open the process token, since no thread token
+            # exists
+            token = win32security.OpenProcessToken(
+                win32api.GetCurrentProcess(),
+                ntsecuritycon.TOKEN_QUERY
+            )
+        security_id, _ = win32security.GetTokenInformation(token, ntsecuritycon.TokenUser)
+        win32api.CloseHandle(token)
+        return win32security.ConvertSidToStringSid(security_id)
 
 
 class SystemStartupHandler:
