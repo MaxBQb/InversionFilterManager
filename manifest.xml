@@ -4,7 +4,7 @@
      processorArchitecture="X86"
      name="InversionManager"
      type="win32"/>
-    <description>Inverts colors when you opens blinding white windows</description>
+    <description>Inverts colors when you open blindingly white windows</description>
     <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
         <security>
             <requestedPrivileges>
