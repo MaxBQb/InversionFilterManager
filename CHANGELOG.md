@@ -1,5 +1,8 @@
 # Changelog
 ## [Unreleased](https://github.com/MaxBQb/InversionFilterManager/releases/tag/latest) (2022-08-16)
+## [Release v0.9.0](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.9.0) (2022-12-17)
+Features:
+- System tray now supports Windows dark theme
 ## [Release v0.8.0](https://github.com/MaxBQb/InversionFilterManager/releases/tag/v0.8.0) (2022-08-16)
 Features:
 - Update confirmation:
