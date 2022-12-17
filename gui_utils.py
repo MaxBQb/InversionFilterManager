@@ -1,3 +1,4 @@
+import ctypes
 from typing import Callable, Any
 
 import PySimpleGUI as sg
@@ -48,6 +49,10 @@ def init_theme():
         titlebar_font=("Tahoma", 12),
         icon=app_abs_path("img/inversion_manager.png"),
     )
+    # Tell Windows that this is dark theme app
+    # So.. use dark menus, like dark system tray etc.
+    # More info here: https://gist.github.com/rounk-ctrl/b04e5622e30e0d62956870d5c22b7017
+    ctypes.windll['uxtheme.dll'][135](1)
 
 
 def get_title(title: str):
