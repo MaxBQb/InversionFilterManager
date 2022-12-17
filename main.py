@@ -27,7 +27,7 @@ async def main(app: AppStartManager):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="App, that inverts colors when you opens blinding white windows")
+    parser = argparse.ArgumentParser(description="An app that inverts colors when you open blindingly white windows")
     parser.add_argument('--allow-multiple', '-m',
                         action='store_true',
                         help="Disable single-instance check")
