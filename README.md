@@ -1,5 +1,5 @@
 # InversionFilterManager [![Latest](https://img.shields.io/github/v/tag/MaxBQb/InversionFilterManager?sort=date&label=&style=for-the-badge&color=424242)](https://github.com/MaxBQb/InversionFilterManager/releases/latest/download/release.zip)
-![Windows](https://svgshare.com/i/ZhY.svg)
+![Windows](https://img.shields.io/badge/platform-Windows-green)
 [![GitHub license](https://img.shields.io/github/license/MaxBQb/InversionFilterManager.svg)](https://github.com/MaxBQb/InversionFilterManager/blob/master/LICENSE.md)
 ![Admin privileges required](https://img.shields.io/badge/-Admin_privileges_required*-red)
 
